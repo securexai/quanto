@@ -1,0 +1,83 @@
+# Backup Files
+*.backup
+*.bak
+*.old
+*.swp
+*~
+
+# Credentials and Secrets
+.env
+.env.local
+.env.*.local
+*credentials*
+*secrets*
+*password*
+*.key
+*.pem
+*.pfx
+*.p12
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+
+# Temporary Files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+*.cache
+
+# Editor and IDE Files
+.vscode/
+.idea/
+.claude/settings.local.json
+.mcp.json
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Personal Notes
+notes/
+private/
+scratch/
+TODO.local
+NOTES.md
+
+# Backup directories
+backup/old/
+backup/archive/
+
+# Logs
+*.log
+logs/
+
+# Python virtual environment
+.venv/
+
+# Devbox local state (kept for rollback; harmless if devbox is not used)
+.devbox/
+
+# Financial data (sensitive — never commit)
+extractos/**/*.pdf
+analisis/**/*.json
+
+# Allow specific documentation
+!README.md
+!CHANGELOG.md
+!LICENSE
+!docs/**/*.md

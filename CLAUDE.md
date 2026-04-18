@@ -126,8 +126,10 @@ quanto/
 ### Dependencias de sistema
 
 - `pdftotext` (poppler-utils) — binario externo invocado por todos los
-  parsers vía subprocess. Instalar dentro del toolbox:
-  `toolbox run -c quanto sudo dnf install poppler-utils`.
+  parsers vía subprocess. En el host Kinoite/Bazzite viene en la imagen
+  base (dependencia transitiva del escritorio KDE/Okular/Dolphin); en el
+  toolbox `quanto` (imagen `fedora-toolbox` sin escritorio) hay que
+  instalarlo explícitamente: `toolbox run -c quanto sudo dnf install poppler-utils`.
 - No hay dependencias pip — todo el código usa stdlib.
 
 ### Comandos comunes

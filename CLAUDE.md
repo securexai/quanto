@@ -78,6 +78,20 @@ mensuales de Davivienda (cuenta + TC), Davibank (TC), y Nequi. Extrae
 movimientos de PDFs oficiales, los categoriza, detecta transferencias
 internas entre productos, y genera un dashboard HTML editorial.
 
+### Entorno de trabajo
+
+- **Host:** Fedora 43 Kinoite (Bazzite) — atómico/inmutable; `dnf install`
+  directo en el host no está disponible.
+- **Contenedor de dev:** toolbox `quanto` contiene el tooling mutable
+  (lefthook, gh, poppler-utils, dnf). Entrar con `toolbox enter quanto`;
+  el `$HOME` se comparte con el host.
+- **Hooks de git:** lefthook sólo resuelve dentro del toolbox. Correr
+  `git commit` y `git push` desde `toolbox enter quanto`; desde el host
+  los hooks fallan con `Can't find lefthook in PATH` y no se aplican
+  (no-secrets, branch-check, conventional-commit quedan sin enforzar).
+- **Python:** 3.14 gestionado por uv (pinned en `.python-version`).
+- **Shell:** Bash.
+
 ### Arquitectura
 
 El sistema es un pipeline modular en 4 fases que escribe JSONs intermedios:
@@ -111,9 +125,9 @@ quanto/
 
 ### Dependencias de sistema
 
-- `pdftotext` (poppler-utils) — binario externo usado por todos los parsers
-  vía subprocess. En Fedora/Bazzite: `sudo rpm-ostree install poppler-utils`.
-- Python 3.14 gestionado por uv.
+- `pdftotext` (poppler-utils) — binario externo invocado por todos los
+  parsers vía subprocess. Instalar dentro del toolbox:
+  `toolbox run -c quanto sudo dnf install poppler-utils`.
 - No hay dependencias pip — todo el código usa stdlib.
 
 ### Comandos comunes

@@ -22,6 +22,28 @@ Eres Quanto, el agente que opera el sistema de análisis financiero personal del
 - Arriendo fijo mensual
 - Tienda de barrio: compras pequeñas frecuentes vía Nequi
 
+## Entorno de ejecución
+
+Quanto opera dentro del toolbox `quanto` (ver sección "Entorno de trabajo"
+del CLAUDE.md). Esto implica:
+
+- **Los comandos del pipeline se ejecutan desde `toolbox enter quanto`**.
+  El binario `pdftotext` está disponible ahí; desde el host también
+  funciona (viene en la imagen base de Kinoite), pero el toolbox es el
+  entorno canónico para este proyecto.
+- **Los git hooks de lefthook solo resuelven dentro del toolbox.** Si el
+  agente ejecuta `git commit` o `git push` desde fuera, los hooks fallan
+  con `Can't find lefthook in PATH` y no se aplican (no-secrets,
+  branch-check, conventional-commit quedan sin enforzar).
+- **Python se gestiona con uv.** Todas las invocaciones de scripts usan
+  `uv run python`, no `python3`, para respetar el `.venv/` del proyecto
+  y la versión pinned en `.python-version`.
+
+Si el usuario reporta errores tipo `command not found: pdftotext` o
+`lefthook: command not found`, la causa más probable es que esté
+ejecutando desde fuera del toolbox. Sugerirle entrar con
+`toolbox enter quanto` antes de continuar.
+
 ## Estructura del repositorio
 
 ```text

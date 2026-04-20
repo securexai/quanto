@@ -199,11 +199,13 @@ al dominio:
  
 - `pdftotext` subprocess calls — pero preferir golden files sobre mocks.
 - File system writes a `analisis/` — testeable por inspección del output.
+
 **No son boundaries** (nunca mockear):
  
 - Módulos internos Python dentro del pipeline.
 - La lógica de carga de `categorias.json`.
 - Serialización/deserialización JSON.
+
 **Estilo de test preferido para este codebase:**
  
 - Golden file regression tests sobre unit tests para los parsers.
@@ -212,6 +214,7 @@ al dominio:
   anonimizadas de los parsers, no entradas).
 - Invariant assertions embebidas en scripts (validación de balance,
   count checks) como primera línea de defensa.
+
 **Estado actual:** el repositorio aún no tiene test suite formal. Los
 invariantes viven embebidos en los scripts del pipeline. Cuando aparezca
 el primer módulo que amerite tests (por ejemplo, cálculos financieros
@@ -230,6 +233,7 @@ everything" principle):
   (regression test para la clase de bug "ARA " → "PARA DIANA").
 - Que los parsers rechacen input malformado claramente en vez de
   silenciosamente contar mal.
+
 **Behaviors que NO vale la pena testear** (per el mismo principio):
  
 - Patrones regex específicos en aislamiento.

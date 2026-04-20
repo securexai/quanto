@@ -93,6 +93,45 @@ internas entre productos, y genera un dashboard HTML editorial.
 - **Python:** 3.14 gestionado por uv (pinned en `.python-version`).
 - **Shell:** Bash.
 
+### Bootstrap del toolbox
+
+Secuencia completa de setup en un toolbox `quanto` nuevo:
+
+```bash
+toolbox create --container quanto
+toolbox enter quanto
+
+# Herramientas base del sistema
+sudo dnf install -y poppler-utils nodejs
+
+# pnpm standalone installer
+curl -fsSL https://get.pnpm.io/install.sh | sh -
+source ~/.bashrc   # o abrir nuevo shell
+
+# Herramientas globales vía pnpm / go
+pnpm add -g markdownlint-cli2
+go install github.com/evilmartians/lefthook@latest
+
+# GitHub CLI (si no viene en la imagen base)
+sudo dnf install -y gh
+
+# Setup del proyecto
+cd ~/repos/quanto
+uv sync
+lefthook install
+
+# Verificación
+pdftotext -v
+markdownlint-cli2 --version
+lefthook --version
+gh --version
+uv --version
+```
+
+Si algún comando falla con `command not found` después del setup, revisar
+que el toolbox tenga en PATH los directorios de pnpm (`~/.local/share/pnpm`)
+y go (`~/go/bin`).
+
 ### Arquitectura
 
 El sistema es un pipeline modular en 4 fases que escribe JSONs intermedios:

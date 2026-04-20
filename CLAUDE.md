@@ -188,3 +188,53 @@ explícita: `> use the quanto subagent`.
   validación OK pero la cifra no cuadra, probablemente el regex perdió
   una línea o un formato nuevo. Investigar antes de continuar.
 
+  ---
+ 
+## Testing approach
+ 
+Este proyecto aplica TDD según la skill `tdd`, con contornos específicos
+al dominio:
+ 
+**System boundaries** (donde los mocks son aceptables según `mocking.md`):
+ 
+- `pdftotext` subprocess calls — pero preferir golden files sobre mocks.
+- File system writes a `analisis/` — testeable por inspección del output.
+**No son boundaries** (nunca mockear):
+ 
+- Módulos internos Python dentro del pipeline.
+- La lógica de carga de `categorias.json`.
+- Serialización/deserialización JSON.
+**Estilo de test preferido para este codebase:**
+ 
+- Golden file regression tests sobre unit tests para los parsers.
+- End-to-end pipeline tests usando JSONs redacted en `tests/fixtures/`
+  (los PDFs originales nunca se commitean; los fixtures son salidas
+  anonimizadas de los parsers, no entradas).
+- Invariant assertions embebidas en scripts (validación de balance,
+  count checks) como primera línea de defensa.
+**Estado actual:** el repositorio aún no tiene test suite formal. Los
+invariantes viven embebidos en los scripts del pipeline. Cuando aparezca
+el primer módulo que amerite tests (por ejemplo, cálculos financieros
+puros), introducir pytest y `tests/` siguiendo las convenciones de arriba.
+ 
+**Cuándo iniciar el test suite de Quanto:** al introducir módulos de
+lógica pura (cálculos financieros, simuladores, forecasting). Para esos
+aplicar TDD según la skill. Mantener los scripts del pipeline sin tests
+hasta que el enfoque de golden files demuestre ser insuficiente.
+ 
+**Behaviors que vale la pena testear** (per skill's "You can't test
+everything" principle):
+ 
+- Correctness del cross-extract matching (Davivienda → Nequi fondeos).
+- Que las reglas de categorización no produzcan falsos positivos
+  (regression test para la clase de bug "ARA " → "PARA DIANA").
+- Que los parsers rechacen input malformado claramente en vez de
+  silenciosamente contar mal.
+**Behaviors que NO vale la pena testear** (per el mismo principio):
+ 
+- Patrones regex específicos en aislamiento.
+- Cada keyword individual en `categorias.json`.
+- Formato del JSON de salida.
+Al implementar tests, seguir el ciclo red-green-refactor según la skill
+`tdd`.
+

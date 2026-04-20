@@ -67,3 +67,124 @@ When committing changes or managing git for this repository, adhere to the follo
    Manual: `lefthook run pre-commit`.
 6. **Clean History:** Prefer `git pull --rebase` when resolving divergent
    branches to keep a linear history.
+
+
+---
+
+## Project: Quanto
+
+Quanto es un sistema de análisis financiero personal que procesa extractos
+mensuales de Davivienda (cuenta + TC), Davibank (TC), y Nequi. Extrae
+movimientos de PDFs oficiales, los categoriza, detecta transferencias
+internas entre productos, y genera un dashboard HTML editorial.
+
+### Entorno de trabajo
+
+- **Host:** Fedora 43 Kinoite (Bazzite) — atómico/inmutable; `dnf install`
+  directo en el host no está disponible.
+- **Contenedor de dev:** toolbox `quanto` contiene el tooling mutable
+  (lefthook, gh, poppler-utils, dnf). Entrar con `toolbox enter quanto`;
+  el `$HOME` se comparte con el host.
+- **Hooks de git:** lefthook sólo resuelve dentro del toolbox. Correr
+  `git commit` y `git push` desde `toolbox enter quanto`; desde el host
+  los hooks fallan con `Can't find lefthook in PATH` y no se aplican
+  (no-secrets, branch-check, conventional-commit quedan sin enforzar).
+- **Python:** 3.14 gestionado por uv (pinned en `.python-version`).
+- **Shell:** Bash.
+
+### Arquitectura
+
+El sistema es un pipeline modular en 4 fases que escribe JSONs intermedios:
+
+1. **Parsing** — 4 parsers (uno por banco/producto) leen PDFs vía
+   `pdftotext -layout` (subprocess) y emiten JSON normalizado con
+   movimientos, saldos y metadata del periodo.
+2. **Cross-matching** — detecta pagos TC desde cuenta, fondeos Nequi desde
+   Davivienda (BRE-B), y actualiza los JSONs marcando transferencias
+   internas para que no se cuenten como gasto.
+3. **Categorización** — aplica `.claude/skills/quanto-extractos/categorias.json`
+   (~50 reglas keyword-based) a cada movimiento. Consolida gastos por
+   categoría/subcategoría y produce `gastos-por-categoria.json`.
+4. **Consolidación + análisis** — calcula métricas de patrimonio, rotación
+   de deuda TC, intereses pagados. El análisis trimestral detecta
+   suscripciones recurrentes y anomalías estadísticas.
+
+### Estructura
+
+\`\`\`
+quanto/
+├── .claude/
+│   ├── agents/quanto.md                  ← sub-agente Claude Code
+│   └── skills/quanto-extractos/
+│       ├── categorias.json               ← diccionario de categorización
+│       └── scripts/                      ← pipeline en 9 scripts
+├── extractos/YYYY-MM/*.pdf              ← entrada (gitignored)
+├── analisis/YYYY-MM/*.json              ← salida procesada (gitignored)
+└── dashboard.html                       ← reporte visual (gitignored)
+\`\`\`
+
+### Dependencias de sistema
+
+- `pdftotext` (poppler-utils) — binario externo invocado por todos los
+  parsers vía subprocess. En el host Kinoite/Bazzite viene en la imagen
+  base (dependencia transitiva del escritorio KDE/Okular/Dolphin); en el
+  toolbox `quanto` (imagen `fedora-toolbox` sin escritorio) hay que
+  instalarlo explícitamente: `toolbox run -c quanto sudo dnf install poppler-utils`.
+- No hay dependencias pip — todo el código usa stdlib.
+
+### Comandos comunes
+
+\`\`\`bash
+# Procesar un mes completo (el sub-agente automatiza esto)
+MES="2026-04"
+uv run python .claude/skills/quanto-extractos/scripts/parser_davivienda_ahorros.py \
+  --pdf "extractos/$MES/davivienda-ahorros.pdf" \
+  --output "analisis/$MES/davivienda-ahorros.json" --verbose
+
+# (repetir para los otros 3 parsers...)
+
+# Matcher cross-extracto
+uv run python .claude/skills/quanto-extractos/scripts/matcher_cross_extracto.py \
+  --ahorros "analisis/$MES/davivienda-ahorros.json" \
+  --tc-davivienda "analisis/$MES/davivienda-tc.json" \
+  --tc-davibank "analisis/$MES/davibank-tc.json" \
+  --nequi "analisis/$MES/nequi.json" \
+  --output "analisis/$MES/cross-match.json"
+
+# Categorizar + consolidar
+uv run python .claude/skills/quanto-extractos/scripts/categorizar_movimientos.py --mes $MES
+uv run python .claude/skills/quanto-extractos/scripts/consolidar_mes.py --mes $MES
+
+# Análisis trimestral + dashboard
+uv run python .claude/skills/quanto-extractos/scripts/analizar_periodo.py \
+  --meses 2026-01,2026-02,2026-03 \
+  --output analisis/trimestre/analisis-trimestral.json
+uv run python .claude/skills/quanto-extractos/scripts/generar_dashboard.py \
+  --meses 2026-01,2026-02,2026-03 \
+  --output dashboard.html
+\`\`\`
+
+### Delegación al sub-agente Quanto
+
+En Claude Code, el sub-agente `.claude/agents/quanto.md` automatiza los
+workflows comunes. Se invoca automáticamente por el `description` match
+cuando menciones extractos, gastos, o nombres de bancos. Delegación
+explícita: `> use the quanto subagent`.
+
+### Invariantes críticas
+
+- **Nunca commitear PDFs ni JSONs de análisis** — contienen datos
+  financieros personales. Protegido por `.gitignore`.
+- **El parser de ahorros debe correrse ANTES del matcher** — el matcher
+  modifica el JSON de ahorros in-place marcando fondeos a Nequi.
+  Re-correr el matcher sin re-parsear ahorros duplica las marcas.
+- **Keywords de categorización mínimo 4 caracteres** y completas
+  ("TIENDAS ARA" no "ARA "). Bug histórico: "ARA " matcheaba "PARA DIANA"
+  en Nequi y clasificaba mal decenas de movimientos.
+- **Orden de reglas en `categorias.json` importa** — específicas antes
+  que genéricas. La regla `transferencia_personal` con keyword "PARA "
+  debe ir AL FINAL.
+- **Validación de balance es obligatoria** — si un parser reporta
+  validación OK pero la cifra no cuadra, probablemente el regex perdió
+  una línea o un formato nuevo. Investigar antes de continuar.
+

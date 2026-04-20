@@ -73,26 +73,26 @@ quanto/
 
    ```bash
    MES="YYYY-MM"
-   python3 .claude/skills/quanto-extractos/scripts/parser_davivienda_ahorros.py \
+   uv run python .claude/skills/quanto-extractos/scripts/parser_davivienda_ahorros.py \
      --pdf "extractos/$MES/davivienda-ahorros.pdf" \
      --output "analisis/$MES/davivienda-ahorros.json" --verbose
-   python3 .claude/skills/quanto-extractos/scripts/parser_davivienda_tc.py \
+   uv run python .claude/skills/quanto-extractos/scripts/parser_davivienda_tc.py \
      --pdf "extractos/$MES/davivienda-tc.pdf" \
      --output "analisis/$MES/davivienda-tc.json" --verbose
-   python3 .claude/skills/quanto-extractos/scripts/parser_davibank_tc.py \
+   uv run python .claude/skills/quanto-extractos/scripts/parser_davibank_tc.py \
      --pdf "extractos/$MES/davibank-tc.pdf" \
      --output "analisis/$MES/davibank-tc.json" --verbose
-   python3 .claude/skills/quanto-extractos/scripts/parser_nequi.py \
+   uv run python .claude/skills/quanto-extractos/scripts/parser_nequi.py \
      --pdf "extractos/$MES/nequi.pdf" \
      --output "analisis/$MES/nequi.json" --verbose
-   python3 .claude/skills/quanto-extractos/scripts/matcher_cross_extracto.py \
+   uv run python .claude/skills/quanto-extractos/scripts/matcher_cross_extracto.py \
      --ahorros "analisis/$MES/davivienda-ahorros.json" \
      --tc-davivienda "analisis/$MES/davivienda-tc.json" \
      --tc-davibank "analisis/$MES/davibank-tc.json" \
      --nequi "analisis/$MES/nequi.json" \
      --output "analisis/$MES/cross-match.json"
-   python3 .claude/skills/quanto-extractos/scripts/categorizar_movimientos.py --mes $MES
-   python3 .claude/skills/quanto-extractos/scripts/consolidar_mes.py --mes $MES
+   uv run python .claude/skills/quanto-extractos/scripts/categorizar_movimientos.py --mes $MES
+   uv run python .claude/skills/quanto-extractos/scripts/consolidar_mes.py --mes $MES
    ```
 
 3. Reportar al usuario:
@@ -121,8 +121,8 @@ quanto/
 5. Re-correr categorización y consolidación de los meses afectados:
 
    ```bash
-   python3 .claude/skills/quanto-extractos/scripts/categorizar_movimientos.py --mes $MES
-   python3 .claude/skills/quanto-extractos/scripts/consolidar_mes.py --mes $MES
+   uv run python .claude/skills/quanto-extractos/scripts/categorizar_movimientos.py --mes $MES
+   uv run python .claude/skills/quanto-extractos/scripts/consolidar_mes.py --mes $MES
    ```
 
 6. Confirmar al usuario qué movimientos cambiaron y el impacto en el ranking.
@@ -154,10 +154,10 @@ quanto/
 **Trigger**: "actualiza el dashboard", "regenera el reporte", o después de procesar un nuevo mes.
 
 ```bash
-python3 .claude/skills/quanto-extractos/scripts/analizar_periodo.py \
+uv run python .claude/skills/quanto-extractos/scripts/analizar_periodo.py \
   --meses 2026-01,2026-02,2026-03[,...] \
   --output analisis/trimestre/analisis-trimestral.json
-python3 .claude/skills/quanto-extractos/scripts/generar_dashboard.py \
+uv run python .claude/skills/quanto-extractos/scripts/generar_dashboard.py \
   --meses 2026-01,2026-02,2026-03[,...] \
   --output dashboard.html
 ```

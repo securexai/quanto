@@ -1,6 +1,7 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with
+code in this repository.
 
 > **Template baseline.** Extend this file with project-specific sections
 > (project overview, commands, architecture, key files, etc.) — do not
@@ -30,9 +31,10 @@ in `lefthook.yml`.
 **Hooks enforced:**
 
 | Hook | Check | What it blocks |
-|------|-------|----------------|
+| ---- | ----- | -------------- |
 | pre-commit | no-secrets | Plaintext password/token/secret patterns |
 | pre-commit | branch-check | Direct commits to `main` |
+| pre-commit | markdownlint | Lint errors in staged `*.md` files |
 | commit-msg | conventional-commit | Non-conventional commit message format |
 | pre-push | branch-check | Direct pushes to `main` |
 
@@ -68,7 +70,6 @@ When committing changes or managing git for this repository, adhere to the follo
 6. **Clean History:** Prefer `git pull --rebase` when resolving divergent
    branches to keep a linear history.
 
-
 ---
 
 ## Project: Quanto
@@ -83,8 +84,8 @@ internas entre productos, y genera un dashboard HTML editorial.
 - **Host:** Fedora 43 Kinoite (Bazzite) — atómico/inmutable; `dnf install`
   directo en el host no está disponible.
 - **Contenedor de dev:** toolbox `quanto` contiene el tooling mutable
-  (lefthook, gh, poppler-utils, dnf). Entrar con `toolbox enter quanto`;
-  el `$HOME` se comparte con el host.
+  (lefthook, gh, poppler-utils, nodejs, pnpm, markdownlint-cli2, dnf).
+  Entrar con `toolbox enter quanto`; el `$HOME` se comparte con el host.
 - **Hooks de git:** lefthook sólo resuelve dentro del toolbox. Correr
   `git commit` y `git push` desde `toolbox enter quanto`; desde el host
   los hooks fallan con `Can't find lefthook in PATH` y no se aplican
@@ -111,7 +112,7 @@ El sistema es un pipeline modular en 4 fases que escribe JSONs intermedios:
 
 ### Estructura
 
-\`\`\`
+```text
 quanto/
 ├── .claude/
 │   ├── agents/quanto.md                  ← sub-agente Claude Code
@@ -121,7 +122,7 @@ quanto/
 ├── extractos/YYYY-MM/*.pdf              ← entrada (gitignored)
 ├── analisis/YYYY-MM/*.json              ← salida procesada (gitignored)
 └── dashboard.html                       ← reporte visual (gitignored)
-\`\`\`
+```
 
 ### Dependencias de sistema
 
@@ -134,7 +135,7 @@ quanto/
 
 ### Comandos comunes
 
-\`\`\`bash
+```bash
 # Procesar un mes completo (el sub-agente automatiza esto)
 MES="2026-04"
 uv run python .claude/skills/quanto-extractos/scripts/parser_davivienda_ahorros.py \
@@ -162,7 +163,7 @@ uv run python .claude/skills/quanto-extractos/scripts/analizar_periodo.py \
 uv run python .claude/skills/quanto-extractos/scripts/generar_dashboard.py \
   --meses 2026-01,2026-02,2026-03 \
   --output dashboard.html
-\`\`\`
+```
 
 ### Delegación al sub-agente Quanto
 
@@ -189,23 +190,23 @@ explícita: `> use the quanto subagent`.
   una línea o un formato nuevo. Investigar antes de continuar.
 
   ---
- 
+
 ## Testing approach
- 
+
 Este proyecto aplica TDD según la skill `tdd`, con contornos específicos
 al dominio:
- 
+
 **System boundaries** (donde los mocks son aceptables según `mocking.md`):
- 
+
 - `pdftotext` subprocess calls — pero preferir golden files sobre mocks.
 - File system writes a `analisis/` — testeable por inspección del output.
 **No son boundaries** (nunca mockear):
- 
+
 - Módulos internos Python dentro del pipeline.
 - La lógica de carga de `categorias.json`.
 - Serialización/deserialización JSON.
 **Estilo de test preferido para este codebase:**
- 
+
 - Golden file regression tests sobre unit tests para los parsers.
 - End-to-end pipeline tests usando JSONs redacted en `tests/fixtures/`
   (los PDFs originales nunca se commitean; los fixtures son salidas
@@ -216,25 +217,24 @@ al dominio:
 invariantes viven embebidos en los scripts del pipeline. Cuando aparezca
 el primer módulo que amerite tests (por ejemplo, cálculos financieros
 puros), introducir pytest y `tests/` siguiendo las convenciones de arriba.
- 
+
 **Cuándo iniciar el test suite de Quanto:** al introducir módulos de
 lógica pura (cálculos financieros, simuladores, forecasting). Para esos
 aplicar TDD según la skill. Mantener los scripts del pipeline sin tests
 hasta que el enfoque de golden files demuestre ser insuficiente.
- 
+
 **Behaviors que vale la pena testear** (per skill's "You can't test
 everything" principle):
- 
+
 - Correctness del cross-extract matching (Davivienda → Nequi fondeos).
 - Que las reglas de categorización no produzcan falsos positivos
   (regression test para la clase de bug "ARA " → "PARA DIANA").
 - Que los parsers rechacen input malformado claramente en vez de
   silenciosamente contar mal.
 **Behaviors que NO vale la pena testear** (per el mismo principio):
- 
+
 - Patrones regex específicos en aislamiento.
 - Cada keyword individual en `categorias.json`.
 - Formato del JSON de salida.
 Al implementar tests, seguir el ciclo red-green-refactor según la skill
 `tdd`.
-

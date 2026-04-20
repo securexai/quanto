@@ -18,6 +18,9 @@ pre-commit:
           echo "ERROR: Direct commits to 'main' are blocked. Create a feature branch first."
           exit 1
         fi
+    markdownlint:
+      glob: "*.md"
+      run: markdownlint-cli2 {staged_files}
 
 commit-msg:
   commands:

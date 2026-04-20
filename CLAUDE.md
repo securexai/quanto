@@ -34,6 +34,7 @@ in `lefthook.yml`.
 | ---- | ----- | -------------- |
 | pre-commit | no-secrets | Plaintext password/token/secret patterns |
 | pre-commit | branch-check | Direct commits to `main` |
+| pre-commit | markdownlint | Lint errors in staged `*.md` files |
 | commit-msg | conventional-commit | Non-conventional commit message format |
 | pre-push | branch-check | Direct pushes to `main` |
 
@@ -83,8 +84,8 @@ internas entre productos, y genera un dashboard HTML editorial.
 - **Host:** Fedora 43 Kinoite (Bazzite) — atómico/inmutable; `dnf install`
   directo en el host no está disponible.
 - **Contenedor de dev:** toolbox `quanto` contiene el tooling mutable
-  (lefthook, gh, poppler-utils, dnf). Entrar con `toolbox enter quanto`;
-  el `$HOME` se comparte con el host.
+  (lefthook, gh, poppler-utils, nodejs, pnpm, markdownlint-cli2, dnf).
+  Entrar con `toolbox enter quanto`; el `$HOME` se comparte con el host.
 - **Hooks de git:** lefthook sólo resuelve dentro del toolbox. Correr
   `git commit` y `git push` desde `toolbox enter quanto`; desde el host
   los hooks fallan con `Can't find lefthook in PATH` y no se aplican

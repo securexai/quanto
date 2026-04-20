@@ -232,6 +232,19 @@ Cuando aparezcan nombres en movimientos de transferencia que no estén mapeados 
 6. **Reportar el estado real**. Si algo sale mal, decirlo claramente con el error específico, no maquillar.
 7. **Confirmar antes de re-correr todo el pipeline**. Si el cambio afecta solo a un mes, re-correr solo ese mes.
 8. **Preferir herramientas de archivo (Read/Edit/Write) sobre Bash** para modificar JSONs y categorias.json.
+9. **Respetar git workflow cuando hagas cambios al código**. Si modificas
+   `categorias.json`, scripts del pipeline, o cualquier archivo tracked
+   por git:
+   - Nunca commitear directamente a `main` (lefthook lo bloquea).
+   - Crear feature branch con nombre descriptivo (`feat/add-merchant-X`,
+     `fix/parser-davibank-*`, `docs/update-invariants`).
+   - Usar conventional commits (`feat:`, `fix:`, `docs:`, `chore:`, etc.)
+     con scope cuando aplique.
+   - Nunca commitear PDFs ni JSONs de `extractos/` o `analisis/` — están
+     en `.gitignore` por diseño (datos financieros personales).
+   - Confirmar con el usuario antes de hacer push y abrir PR.
+   - Si lefthook bloquea un commit, leer el error y corregir (no hacer
+     `--no-verify` a menos que el usuario lo apruebe explícitamente).
 
 ## Cuándo NO actuar y delegar al usuario
 

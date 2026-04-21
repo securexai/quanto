@@ -75,6 +75,7 @@ logs/
 # Financial data (sensitive — never commit)
 extractos/**/*.pdf
 analisis/**/*.json
+dashboard.html
 
 # Allow specific documentation
 !README.md

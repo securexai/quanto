@@ -1,3 +1,71 @@
 {
-  "reglas": []
+  "version": "2026-04-21",
+  "notas": "Reglas keyword-based para Q1 2026. Orden importa: específicas antes que genéricas. Match case-insensitive por substring sobre la descripción del movimiento.",
+  "reglas": [
+    { "keywords": ["TRANSFERENCIA CITIBANK 9002185787"], "categoria": "ingresos", "subcategoria": "salario" },
+    { "keywords": ["RENDIMIENTOS FINANCIEROS", "PAGO DE INTERESES"], "categoria": "ingresos", "subcategoria": "rendimientos" },
+    { "keywords": ["TRANSFERENCIA DE OTRA ENTIDAD A LLAVE", "ABONO POR TRANSFERENCIA OTRA ENTIDAD", "TRANSFERENCIA DE OTRA ENTIDAD"], "categoria": "ingresos", "subcategoria": "transferencia_recibida" },
+    { "keywords": ["RECIBI POR BRE-B DE", "DE WENDY LORENA", "DE SERGIO"], "categoria": "ingresos", "subcategoria": "transferencia_recibida" },
+
+    { "keywords": ["INTERES CORRIEN", "SEGURO DE VIDA OBLIGATORIO", "CUOTA DE MANEJO MENSUAL", "CUOTA DE SEGURO"], "categoria": "financieros", "subcategoria": "intereses_y_cargos_tc" },
+    { "keywords": ["REINTEGRO INTERES CORRIENTE"], "categoria": "financieros", "subcategoria": "reintegro_intereses" },
+    { "keywords": ["DCTO.TRANSFERENCIA OTRA ENTIDAD AV VILLAS"], "categoria": "transferencia_recurrente", "subcategoria": "av_villas" },
+    { "keywords": ["COBRO TRANSF. ENVIADA OTRA ENTIDAD", "IVA POR SERVICIOS", "DESCUENTO RETENCION EN LA FUENTE", "GRAVAMEN A LOS MOVIMIENTOS FINANCIEROS", "DCTO.TRANSFERENCIA OTRA ENTIDAD"], "categoria": "financieros", "subcategoria": "comisiones_bancarias" },
+    { "keywords": ["RETIRO EN CAJERO AUTOMATICO"], "categoria": "financieros", "subcategoria": "retiro_cajero" },
+
+    { "keywords": ["COMPRA FIDEICOMISOS", "FIDUCIARIA BANCOLOMBIA"], "categoria": "inversion", "subcategoria": "fiducia" },
+    { "keywords": ["DEPARTAMENTO DEL ATLANT"], "categoria": "impuestos", "subcategoria": "impuesto_vehiculo" },
+    { "keywords": ["TRANSFERENCIA A TITULOS DE INVERSION"], "categoria": "inversion", "subcategoria": "retorno_titulos" },
+    { "keywords": ["KOA COMPANIA DE FINANCI"], "categoria": "inversion", "subcategoria": "compra_titulos_koa" },
+
+    { "keywords": ["PAGO TARJ. CREDITO"], "categoria": "transferencia_interna", "subcategoria": "pago_tc_davivienda" },
+    { "keywords": ["PAGOS ELECTRONICOS SCOT"], "categoria": "transferencia_interna", "subcategoria": "pago_tc_davibank" },
+    { "keywords": ["GRACIAS POR SU PAGO"], "categoria": "transferencia_interna", "subcategoria": "recibo_pago_tc" },
+
+    { "keywords": ["JERONIMO MARTINS COLOMBIA ARA", "JERONIMO MARTINS", "TIENDAS ARA"], "categoria": "alimentacion", "subcategoria": "supermercado_ara" },
+    { "keywords": ["SAO 094", "SUPERTIENDA OLIMPICA", "ALMACEN MI CORRAL", "TIENDA D1", "JUMBO", "PLAZA 76"], "categoria": "alimentacion", "subcategoria": "supermercado" },
+    { "keywords": ["BOLD*PANADERA", "PANADERIA MONTREAL", "PAL HORNO PANADERIA", "PANADERIA 20 DE JULIO"], "categoria": "alimentacion", "subcategoria": "panaderia" },
+    { "keywords": ["FRISBY", "CREPES Y WAFFLES", "RESTAURANTE LOS TRIGALE", "RESTAURANTE Y PESCADER", "BOLD*RESTAURANTE", "FULL WOK Y CHUZO", "DELIPOSTRES", "PIZZA CHICAGO", "DOMIORIENTE", "MR FLAKOS", "Q75 ISIMO PARAISO", "COMERCIALIZADORA Y PESC", "GRUPO UMA SAS", "COMIDAS RAPIDAS"], "categoria": "alimentacion", "subcategoria": "restaurantes" },
+    { "keywords": ["DLO*RAPPI"], "categoria": "alimentacion", "subcategoria": "rappi" },
+    { "keywords": ["PAGO EN QR BRE-B: FRUTERIA", "PAGO EN QR BRE-B: BRASAS", "PAGO EN QR BRE-B: EL KIOSCO"], "categoria": "alimentacion", "subcategoria": "comercios_qr" },
+
+    { "keywords": ["FARMATODO", "DROGUERIA CRUZ VERDE"], "categoria": "salud", "subcategoria": "farmacia" },
+    { "keywords": ["CLINICA VETERINARIA", "MEDIVETZ"], "categoria": "mascotas", "subcategoria": "veterinaria" },
+    { "keywords": ["ASISTENCIA MEDICA", "MI FISICO"], "categoria": "salud", "subcategoria": "servicios_medicos" },
+
+    { "keywords": ["SMART FIT", "COMFAMILIAR SPORT GYM"], "categoria": "deporte", "subcategoria": "gimnasio" },
+
+    { "keywords": ["EDS 322", "ESTACION DE SERVICIO", "OXXO BATALLON", "PARQUEADERO"], "categoria": "transporte", "subcategoria": "combustible_y_parqueo" },
+
+    { "keywords": ["AIR-E"], "categoria": "vivienda", "subcategoria": "servicios_energia" },
+    { "keywords": ["GASES DEL CARIBE"], "categoria": "vivienda", "subcategoria": "servicios_gas" },
+    { "keywords": ["TRIPLE A"], "categoria": "vivienda", "subcategoria": "servicios_agua" },
+    { "keywords": ["COMCEL PAGOS DE FACTURA", "MOVISTAR PAGOSEPAYCO"], "categoria": "vivienda", "subcategoria": "servicios_telecom" },
+    { "keywords": ["PAGO DE SERVICIO", "DEBITO AUTOMATICO DE TERCEROS"], "categoria": "vivienda", "subcategoria": "servicios_otros" },
+    { "keywords": ["DCTO.TRANSFERENCIA OTRA ENTIDAD AV VILLAS"], "categoria": "transferencia_recurrente", "subcategoria": "av_villas" },
+
+    { "keywords": ["CLAUDE.AI SUBSCRIPTION"], "categoria": "suscripciones", "subcategoria": "software_ia" },
+    { "keywords": ["GOOGLE *GOOGLE ONE", "DLO GOOGLE"], "categoria": "suscripciones", "subcategoria": "software_google" },
+    { "keywords": ["PROTON* PROTON"], "categoria": "suscripciones", "subcategoria": "software_productividad" },
+    { "keywords": ["SUSCRIPCION LIFEMILES"], "categoria": "suscripciones", "subcategoria": "lifemiles" },
+    { "keywords": ["STEAMGAMES.COM", "WL *STEAM PURCHASE"], "categoria": "entretenimiento", "subcategoria": "videojuegos" },
+    { "keywords": ["AMAZON COM", "AMAZON MARK", "AMAZON MKTPL"], "categoria": "compras_online", "subcategoria": "amazon" },
+    { "keywords": ["MERCADO PAGO"], "categoria": "compras_online", "subcategoria": "mercado_pago" },
+    { "keywords": ["2CO.COMNLITESOFT"], "categoria": "suscripciones", "subcategoria": "software_otros" },
+    { "keywords": ["SERVICIOS WEB EBANX COM"], "categoria": "suscripciones", "subcategoria": "software_otros" },
+    { "keywords": ["WOOTING STORE", "WOOPI"], "categoria": "compras_online", "subcategoria": "hardware_otros" },
+
+    { "keywords": ["ADEINCO"], "categoria": "compras_otros", "subcategoria": "general" },
+    { "keywords": ["DOLLARCITY", "MR BONO"], "categoria": "compras_otros", "subcategoria": "retail" },
+
+    { "keywords": ["TRANSFERENCIA ENVIADA A DAVIPLATA"], "categoria": "transferencia_interna", "subcategoria": "daviplata" },
+    { "keywords": ["ABONO DE BOLSILLO A CUENTA", "TRANSFERENCIA DE BOLSILLO A CUENTA", "TRANSFERENCIA DE DINERO A BOLSILLO", "TRANSFERENCIA DESDE CUENTA A BOLSILLO", "TRASLADO RENDIMIENTOS A BOLSILLO", "ABONO RENDIMIENTOS NETOS DESDE CUENTA"], "categoria": "transferencia_interna", "subcategoria": "bolsillo" },
+
+    { "keywords": ["PARA DIANA PATRICIA TASCO"], "categoria": "transferencia_personal", "subcategoria": "diana" },
+    { "keywords": ["PARA EDUAR DE JESUS VILAR"], "categoria": "transferencia_personal", "subcategoria": "eduar" },
+    { "keywords": ["PARA SAMANTHA GABRIELA", "PARA SALOME LOPEZ CHICA", "PARA JAIME ENRIQUE GONZALEZ", "PARA CESAR AUGUSTO PATINO", "PARA JAIR DE JESUS VERGARA", "PARA MARGARITA DANESSA", "PARA LACIDES JUNIOR ORTEGA", "PARA LUCILA LUCILA LOPEZ", "PARA REBECA CASSIANI", "PARA GREIDYS EDUARDO", "PAGO EN SANTIAGO ESCORCIA", "PAGO EN TATIANA MARGARITA", "PAGO EN ELVIRA ESTHER", "ENVIO CON BRE-B A:"], "categoria": "transferencia_personal", "subcategoria": "otros_destinatarios" },
+
+    { "keywords": ["COMPRA A COMERCIO LLAVE OTRA ENTIDAD"], "categoria": "compras_otros", "subcategoria": "compra_breb" },
+    { "keywords": ["TRANSFERENCIA A LLAVE OTRA ENTIDAD"], "categoria": "transferencia_personal", "subcategoria": "otros_destinatarios" }
+  ]
 }

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Agrega métricas de varios meses, detecta suscripciones recurrentes y anomalías."""
 from __future__ import annotations
 

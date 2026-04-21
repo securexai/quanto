@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Genera dashboard HTML editorial a partir del análisis trimestral."""
 from __future__ import annotations
 

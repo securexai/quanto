@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Parse Nequi PDF extracto into normalized JSON."""
 from __future__ import annotations
 

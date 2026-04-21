@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Match internal transfers across bank products: mark TC payments from ahorros
 and Nequi fundings (BRE-B) from Davivienda ahorros so they don't double-count as
 expense/income."""

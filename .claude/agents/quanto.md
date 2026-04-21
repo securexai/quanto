@@ -31,16 +31,17 @@ del CLAUDE.md). Esto implica:
   El binario `pdftotext` está disponible ahí; desde el host también
   funciona (viene en la imagen base de Kinoite), pero el toolbox es el
   entorno canónico para este proyecto.
-- **Los git hooks de lefthook solo resuelven dentro del toolbox.** Si el
-  agente ejecuta `git commit` o `git push` desde fuera, los hooks fallan
-  con `Can't find lefthook in PATH` y no se aplican (no-secrets,
-  branch-check, conventional-commit quedan sin enforzar).
+- **Los git hooks de pre-commit solo resuelven dentro del toolbox.** Si
+  el agente ejecuta `git commit` o `git push` desde fuera, los hooks
+  fallan con `pre-commit: command not found` y no se aplican (gitleaks,
+  commitlint, no-commit-to-branch, shellcheck y los baseline checks
+  quedan sin enforzar).
 - **Python se gestiona con uv.** Todas las invocaciones de scripts usan
   `uv run python`, no `python3`, para respetar el `.venv/` del proyecto
   y la versión pinned en `.python-version`.
 
 Si el usuario reporta errores tipo `command not found: pdftotext` o
-`lefthook: command not found`, la causa más probable es que esté
+`pre-commit: command not found`, la causa más probable es que esté
 ejecutando desde fuera del toolbox. Sugerirle entrar con
 `toolbox enter quanto` antes de continuar.
 
@@ -235,16 +236,18 @@ Cuando aparezcan nombres en movimientos de transferencia que no estén mapeados 
 9. **Respetar git workflow cuando hagas cambios al código**. Si modificas
    `categorias.json`, scripts del pipeline, o cualquier archivo tracked
    por git:
-   - Nunca commitear directamente a `main` (lefthook lo bloquea).
+   - Nunca commitear directamente a `main` (el hook
+     `no-commit-to-branch` de pre-commit lo bloquea).
    - Crear feature branch con nombre descriptivo (`feat/add-merchant-X`,
      `fix/parser-davibank-*`, `docs/update-invariants`).
    - Usar conventional commits (`feat:`, `fix:`, `docs:`, `chore:`, etc.)
-     con scope cuando aplique.
+     con scope cuando aplique (enforzado por commitlint).
    - Nunca commitear PDFs ni JSONs de `extractos/` o `analisis/` — están
      en `.gitignore` por diseño (datos financieros personales).
    - Confirmar con el usuario antes de hacer push y abrir PR.
-   - Si lefthook bloquea un commit, leer el error y corregir (no hacer
-     `--no-verify` a menos que el usuario lo apruebe explícitamente).
+   - Si un hook de pre-commit bloquea un commit, leer el error y
+     corregir (no hacer `--no-verify` a menos que el usuario lo apruebe
+     explícitamente).
 
 ## Cuándo NO actuar y delegar al usuario
 

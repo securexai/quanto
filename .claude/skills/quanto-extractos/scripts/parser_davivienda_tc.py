@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Parse Davivienda credit card PDF extracto into normalized JSON."""
 from __future__ import annotations
 

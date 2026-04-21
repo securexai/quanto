@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Consolida métricas mensuales: patrimonio, deuda TC, intereses, ahorro neto."""
 from __future__ import annotations
 

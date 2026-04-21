@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Categoriza movimientos de los 4 productos aplicando categorias.json.
 Emite analisis/{mes}/movimientos-categorizados.json y gastos-por-categoria.json."""
 from __future__ import annotations

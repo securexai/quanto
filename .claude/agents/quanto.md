@@ -236,8 +236,10 @@ Cuando aparezcan nombres en movimientos de transferencia que no estén mapeados 
 9. **Respetar git workflow cuando hagas cambios al código**. Si modificas
    `categorias.json`, scripts del pipeline, o cualquier archivo tracked
    por git:
-   - Nunca commitear directamente a `main` (el hook
-     `no-commit-to-branch` de pre-commit lo bloquea).
+   - Nunca commitear directamente a `main` (ni `master`, `develop`,
+     `release/*`). El hook `no-commit-to-branch` bloquea localmente; el
+     ruleset `protect-main` en GitHub bloquea pushes directos a `main`
+     server-side.
    - Crear feature branch con nombre descriptivo (`feat/add-merchant-X`,
      `fix/parser-davibank-*`, `docs/update-invariants`).
    - Usar conventional commits (`feat:`, `fix:`, `docs:`, `chore:`, etc.)

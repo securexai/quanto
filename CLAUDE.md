@@ -24,12 +24,12 @@ framework. Configuration lives in `.pre-commit-config.yaml`; per-hook
 configs live in `commitlint.config.js` and `.gitleaks.toml`.
 
 Install pre-commit once per machine (`pipx install pre-commit`), then
-register the hooks per clone:
+register the hooks per clone. `default_install_hook_types` in
+`.pre-commit-config.yaml` already lists `pre-commit`, `commit-msg`, and
+`pre-push`, so a single `install` registers all three:
 
 ```bash
 pre-commit install --install-hooks
-pre-commit install --hook-type commit-msg
-pre-commit install --hook-type pre-push
 pre-commit autoupdate
 ```
 
@@ -38,7 +38,7 @@ pre-commit autoupdate
 | Stage | Hook | Source | What it blocks |
 | ----- | ---- | ------ | -------------- |
 | pre-commit | baseline hygiene | pre-commit/pre-commit-hooks v6.0.0 | trailing whitespace, missing EOF newline, CRLF, merge conflicts, case conflicts, bad shebangs, files >10 MB, invalid YAML/JSON/TOML, private keys in tree |
-| pre-commit | no-commit-to-branch | pre-commit/pre-commit-hooks v6.0.0 | Direct commits to `main` |
+| pre-commit | no-commit-to-branch | pre-commit/pre-commit-hooks v6.0.0 | Direct commits to `main`, `master`, `develop`, or any `release/*` branch |
 | pre-commit | gitleaks | gitleaks/gitleaks v8.30.0 | ~200 provider-specific secret formats (AWS, GitHub PATs, Stripe, GCP, private-key blobs, high-entropy strings). Allowlist in `.gitleaks.toml` |
 | pre-commit | shellcheck | shellcheck-py v0.11.0.1 | Shell scripting issues (severity ≥ warning) |
 | commit-msg | commitlint | alessandrojcm/commitlint-pre-commit-hook v9.24.0 + `@commitlint/cli@19.5.0` | Non-conventional format, bad type, uppercase type, empty subject, trailing period, subject >72 chars |
@@ -59,8 +59,10 @@ pre-commit run gitleaks --all-files   # just one hook
 When committing changes or managing git for this repository, adhere to the following:
 
 1. **Feature Branches:** Always create a feature branch before making changes.
-   Direct commits to `main` are blocked locally by the `no-commit-to-branch`
-   pre-commit hook.
+   Direct commits to `main` (and `master`, `develop`, `release/*`) are blocked
+   locally by the `no-commit-to-branch` pre-commit hook; direct pushes to
+   `main` are also blocked server-side by the `protect-main` repository
+   ruleset (see "Server-side branch protection" below).
 2. **Conventional Commits:** Use standard prefixes: `feat:`, `fix:`, `docs:`,
    `chore:`, `refactor:`, `test:`, `ci:`, `style:`, `perf:`, `build:`, `revert:`.
    Include scopes where applicable (e.g., `feat(auth):`, `fix(api):`). Enforced
@@ -76,6 +78,34 @@ When committing changes or managing git for this repository, adhere to the follo
    `pre-commit run --all-files`.
 6. **Clean History:** Prefer `git pull --rebase` when resolving divergent
    branches to keep a linear history.
+
+### Server-side branch protection
+
+`main` is protected on GitHub by the repository ruleset **`protect-main`**
+(ID `15373845`). Enforcement is `active` and cannot be bypassed.
+
+| Rule | Blocks |
+| ---- | ------ |
+| `deletion` | `git push origin --delete main` |
+| `non_fast_forward` | Force-push to `main` (`--force`, `--force-with-lease`) |
+| `pull_request` | Direct pushes to `main`; merges require a PR. `required_approving_review_count: 0` (solo-dev friendly); `required_review_thread_resolution: true` so any open conversation must be resolved before merge. |
+
+Inspect or edit at <https://github.com/securexai/quanto/rules/15373845>.
+To modify via CLI:
+
+```bash
+gh api repos/securexai/quanto/rulesets/15373845
+gh api --method PUT repos/securexai/quanto/rulesets/15373845 --input <file>
+```
+
+### Commit signing (known deviation)
+
+The global engineering standard requires signed commits (`git commit -S`).
+This repo does **not** currently enforce signatures: no signing key is
+configured, and the `protect-main` ruleset omits `required_signatures`.
+When a signing key is set up (SSH signing via `gpg.format = ssh` is the
+least-friction option on this host), revisit this section and add
+`{"type": "required_signatures"}` to the ruleset.
 
 ---
 
@@ -129,9 +159,7 @@ sudo dnf install -y gh
 # Setup del proyecto (una vez por clon)
 cd ~/repos/quanto
 uv sync
-pre-commit install --install-hooks
-pre-commit install --hook-type commit-msg
-pre-commit install --hook-type pre-push
+pre-commit install --install-hooks   # registra pre-commit + commit-msg + pre-push
 pre-commit autoupdate
 
 # Verificación

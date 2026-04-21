@@ -1,0 +1,64 @@
+# .pre-commit-config.yaml
+#
+# Mirrors the enforcement rules declared in CLAUDE.md.
+# After installing, run `pre-commit autoupdate` to pick up newer hook revisions.
+
+default_install_hook_types: [pre-commit, commit-msg, pre-push]
+
+repos:
+  # ---------------------------------------------------------------------------
+  # Baseline hygiene
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-added-large-files
+        args: [--maxkb=10240]
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args:
+          - --branch=main
+          - --branch=master
+          - --branch=develop
+          - --pattern=^release/
+
+  # ---------------------------------------------------------------------------
+  # Secret detection — gitleaks
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  # ---------------------------------------------------------------------------
+  # Conventional Commits — commitlint (runs on commit-msg stage)
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.24.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        additional_dependencies:
+          - '@commitlint/cli@19.5.0'
+          - '@commitlint/config-conventional@19.5.0'
+
+  # ---------------------------------------------------------------------------
+  # Shell script linting
+  # ---------------------------------------------------------------------------
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: [--severity=warning]

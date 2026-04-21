@@ -17,35 +17,41 @@ Python is managed by [uv](https://docs.astral.sh/uv/). Run scripts with
 `.python-version`; dependencies and metadata live in `pyproject.toml`.
 Run `uv sync` after a fresh clone to create `.venv/`.
 
-`lefthook` is a globally-installed tool and is invoked directly (no wrapper).
+## Git Hooks (pre-commit)
 
-## Git Hooks (Lefthook)
+Git hooks are managed by the [pre-commit](https://pre-commit.com/)
+framework. Configuration lives in `.pre-commit-config.yaml`; per-hook
+configs live in `commitlint.config.js` and `.gitleaks.toml`.
 
-Git hooks are managed by [Lefthook](https://github.com/evilmartians/lefthook).
-Install it once globally — via `go install github.com/evilmartians/lefthook@latest`,
-`npm install -g lefthook`, or a prebuilt binary from the
-[releases page](https://github.com/evilmartians/lefthook/releases) — and run
-`lefthook install` from the repo root to register hooks. Configuration lives
-in `lefthook.yml`.
+Install pre-commit once per machine (`pipx install pre-commit`), then
+register the hooks per clone:
+
+```bash
+pre-commit install --install-hooks
+pre-commit install --hook-type commit-msg
+pre-commit install --hook-type pre-push
+pre-commit autoupdate
+```
 
 **Hooks enforced:**
 
-| Hook | Check | What it blocks |
-| ---- | ----- | -------------- |
-| pre-commit | no-secrets | Plaintext password/token/secret patterns |
-| pre-commit | branch-check | Direct commits to `main` |
-| pre-commit | markdownlint | Lint errors in staged `*.md` files |
-| commit-msg | conventional-commit | Non-conventional commit message format |
-| pre-push | branch-check | Direct pushes to `main` |
+| Stage | Hook | Source | What it blocks |
+| ----- | ---- | ------ | -------------- |
+| pre-commit | baseline hygiene | pre-commit/pre-commit-hooks v6.0.0 | trailing whitespace, missing EOF newline, CRLF, merge conflicts, case conflicts, bad shebangs, files >10 MB, invalid YAML/JSON/TOML, private keys in tree |
+| pre-commit | no-commit-to-branch | pre-commit/pre-commit-hooks v6.0.0 | Direct commits to `main` |
+| pre-commit | gitleaks | gitleaks/gitleaks v8.30.0 | ~200 provider-specific secret formats (AWS, GitHub PATs, Stripe, GCP, private-key blobs, high-entropy strings). Allowlist in `.gitleaks.toml` |
+| pre-commit | shellcheck | shellcheck-py v0.11.0.1 | Shell scripting issues (severity ≥ warning) |
+| commit-msg | commitlint | alessandrojcm/commitlint-pre-commit-hook v9.24.0 + `@commitlint/cli@19.5.0` | Non-conventional format, bad type, uppercase type, empty subject, trailing period, subject >72 chars |
 
-Add project-specific pre-push checks (test suites, integration tests, build
-verification) by editing `lefthook.yml`. A commented placeholder is included.
+Pins are maintained by `pre-commit autoupdate` — run periodically to pull
+newer hook revisions. Merge and revert commits are auto-ignored by
+commitlint so they pass the commit-msg hook.
 
 **Manual hook execution:**
 
 ```bash
-lefthook run pre-commit    # Run pre-commit hooks
-lefthook run pre-push      # Run pre-push hooks
+pre-commit run --all-files            # all hooks across the whole tree
+pre-commit run gitleaks --all-files   # just one hook
 ```
 
 ## Git Workflow & Best Practices
@@ -53,20 +59,21 @@ lefthook run pre-push      # Run pre-push hooks
 When committing changes or managing git for this repository, adhere to the following:
 
 1. **Feature Branches:** Always create a feature branch before making changes.
-   Direct commits and pushes to `main` are blocked by Lefthook hooks.
+   Direct commits to `main` are blocked locally by the `no-commit-to-branch`
+   pre-commit hook.
 2. **Conventional Commits:** Use standard prefixes: `feat:`, `fix:`, `docs:`,
    `chore:`, `refactor:`, `test:`, `ci:`, `style:`, `perf:`, `build:`, `revert:`.
    Include scopes where applicable (e.g., `feat(auth):`, `fix(api):`). Enforced
-   by the commit-msg hook.
+   by the commitlint commit-msg hook.
 3. **Secret Safety:** NEVER commit plaintext credentials. Enforced by the
-   pre-commit `no-secrets` hook. Keep secrets in `.env*` (gitignored) or an
+   gitleaks pre-commit hook. Keep secrets in `.env*` (gitignored) or an
    encrypted store; use templated placeholder files for anything that must be
    checked in.
 4. **Atomic Commits:** Keep commits logically separated. Don't bundle unrelated
    changes (e.g., feature work, doc sweeps, and formatting refactors should be
    three commits).
-5. **Pre-Commit Checks:** Automated via Lefthook (no-secrets, branch-check).
-   Manual: `lefthook run pre-commit`.
+5. **Pre-Commit Checks:** Automated via `pre-commit`. Manual run:
+   `pre-commit run --all-files`.
 6. **Clean History:** Prefer `git pull --rebase` when resolving divergent
    branches to keep a linear history.
 
@@ -84,12 +91,16 @@ internas entre productos, y genera un dashboard HTML editorial.
 - **Host:** Fedora 43 Kinoite (Bazzite) — atómico/inmutable; `dnf install`
   directo en el host no está disponible.
 - **Contenedor de dev:** toolbox `quanto` contiene el tooling mutable
-  (lefthook, gh, poppler-utils, nodejs, pnpm, markdownlint-cli2, dnf).
-  Entrar con `toolbox enter quanto`; el `$HOME` se comparte con el host.
-- **Hooks de git:** lefthook sólo resuelve dentro del toolbox. Correr
-  `git commit` y `git push` desde `toolbox enter quanto`; desde el host
-  los hooks fallan con `Can't find lefthook in PATH` y no se aplican
-  (no-secrets, branch-check, conventional-commit quedan sin enforzar).
+  (pre-commit, pipx, gh, poppler-utils, nodejs, pnpm, markdownlint-cli2,
+  dnf). Entrar con `toolbox enter quanto`; el `$HOME` se comparte con el
+  host.
+- **Hooks de git:** `pre-commit` sólo resuelve dentro del toolbox.
+  Correr `git commit` y `git push` desde `toolbox enter quanto`; desde
+  el host los hooks fallan con `pre-commit: command not found` y no se
+  aplican (gitleaks, commitlint, no-commit-to-branch, shellcheck y los
+  baseline checks quedan sin enforzar). Las herramientas subyacentes
+  (gitleaks, commitlint, shellcheck) se instalan automáticamente por
+  `pre-commit` en entornos aislados — no requieren instalación global.
 - **Python:** 3.14 gestionado por uv (pinned en `.python-version`).
 - **Shell:** Bash.
 
@@ -102,35 +113,38 @@ toolbox create --container quanto
 toolbox enter quanto
 
 # Herramientas base del sistema
-sudo dnf install -y poppler-utils nodejs
+sudo dnf install -y poppler-utils nodejs pipx
 
 # pnpm standalone installer
 curl -fsSL https://get.pnpm.io/install.sh | sh -
 source ~/.bashrc   # o abrir nuevo shell
 
-# Herramientas globales vía pnpm / go
-pnpm add -g markdownlint-cli2
-go install github.com/evilmartians/lefthook@latest
+# Herramientas globales vía pnpm / pipx
+pnpm add -g markdownlint-cli2   # lint manual de docs
+pipx install pre-commit         # orquestador de git hooks
 
 # GitHub CLI (si no viene en la imagen base)
 sudo dnf install -y gh
 
-# Setup del proyecto
+# Setup del proyecto (una vez por clon)
 cd ~/repos/quanto
 uv sync
-lefthook install
+pre-commit install --install-hooks
+pre-commit install --hook-type commit-msg
+pre-commit install --hook-type pre-push
+pre-commit autoupdate
 
 # Verificación
 pdftotext -v
 markdownlint-cli2 --version
-lefthook --version
+pre-commit --version
 gh --version
 uv --version
 ```
 
-Si algún comando falla con `command not found` después del setup, revisar
-que el toolbox tenga en PATH los directorios de pnpm (`~/.local/share/pnpm`)
-y go (`~/go/bin`).
+Si algún comando falla con `command not found` después del setup,
+revisar que el toolbox tenga en PATH los directorios de pnpm
+(`~/.local/share/pnpm`) y pipx (`~/.local/bin`).
 
 ### Arquitectura
 

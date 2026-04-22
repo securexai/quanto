@@ -18,6 +18,7 @@ module.exports = {
         'chore',     // tooling, deps, housekeeping
         'docs',      // documentation only
         'refactor',  // code change that neither fixes a bug nor adds a feature
+        'style',     // formatting, whitespace — no semantic change
         'test',      // adding or correcting tests
         'perf',      // performance improvement
         'ci',        // CI/CD pipeline change

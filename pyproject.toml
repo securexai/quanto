@@ -4,3 +4,37 @@ version = "0.1.0"
 description = "Agente de finanzas personales"
 requires-python = ">=3.14"
 dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.11",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+# Conservative starting set. Expand after running `ruff check .` and
+# seeing what fires. Full rule catalog: https://docs.astral.sh/ruff/rules/
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort (import ordering)
+    "B",    # flake8-bugbear (likely bugs)
+    "UP",   # pyupgrade (modern syntax)
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific
+]
+# RUF001: ambiguous-unicode-character — codebase is bilingual (Spanish/English)
+# so Latin-lookalike characters in strings (é, á, ñ, etc.) are legitimate.
+ignore = ["RUF001"]
+
+[tool.ruff.lint.per-file-ignores]
+# Pipeline scripts contain diagnostic f-strings and HTML template fragments
+# with long lines that would lose readability if mechanically split.
+".claude/skills/quanto-extractos/scripts/*.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

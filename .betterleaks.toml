@@ -1,0 +1,99 @@
+# .betterleaks.toml
+#
+# Secret detection for quanto. Extends the Betterleaks default ruleset with
+# project-specific checks appropriate for a personal finance repo.
+#
+# Betterleaks reads both `.betterleaks.toml` and `.gitleaks.toml` (the latter
+# for backward compatibility). This file uses `[[allowlists]]` plural and
+# `[[rules.allowlists]]` per-rule syntax — the native v8.25+ format.
+#
+# Docs: https://github.com/betterleaks/betterleaks
+# Regex engine: Go RE2 — no lookarounds, no backreferences.
+
+title = "quanto Betterleaks config"
+
+[extend]
+# Inherit Betterleaks' built-in rule set (credit card patterns, generic API
+# keys, private key blocks, AWS/GCP/Azure keys, etc.).
+useDefault = true
+
+# -----------------------------------------------------------------------------
+# Repo-specific safety net
+# -----------------------------------------------------------------------------
+
+# PDFs under `extractos/` and JSON under `analisis/` are gitignored, but if
+# something ever slips past (rename, explicit `git add -f`, etc.) we want a
+# scanner-level block as belt-and-braces. This rule fires on any attempt to
+# stage these files.
+[[rules]]
+id = "financial-data-committed"
+description = "Financial data file staged for commit (should be gitignored)"
+# Match anything — Betterleaks fires based on the path filter below.
+regex = '''.'''
+path = '''(^|/)(extractos/.*\.pdf|analisis/.*\.json)$'''
+tags = ["financial", "pii", "policy"]
+
+# -----------------------------------------------------------------------------
+# Colombian PII patterns (DISABLED by default — enable after validation)
+# -----------------------------------------------------------------------------
+#
+# The patterns below are appropriate for a repo that processes Colombian
+# bank statements, but they need validation against real (sanitized) data
+# before enabling — false-positive rates on 8-10 digit numbers can be high
+# in financial analysis code that legitimately handles numeric values.
+#
+# To enable, uncomment the rule blocks and verify against a test corpus:
+#   betterleaks dir --config .betterleaks.toml tests/fixtures/
+#
+# [[rules]]
+# id = "colombian-cedula"
+# description = "Colombian cédula de ciudadanía (8-10 digits in identity context)"
+# regex = '''(?i)(?:cedula|cédula|cc|documento|identificacion|identificación)\s*[:=#]?\s*["']?(\d{8,10})["']?'''
+# secretGroup = 1
+# keywords = ["cedula", "cédula", "documento"]
+# tags = ["pii", "colombia", "cedula"]
+#
+# [[rules]]
+# id = "colombian-nit"
+# description = "Colombian NIT (tax identification: 9 digits + check digit)"
+# regex = '''(?i)nit\s*[:=#]?\s*["']?(\d{9,10}(?:[-.]\d)?)["']?'''
+# secretGroup = 1
+# keywords = ["nit"]
+# tags = ["pii", "colombia", "nit"]
+#
+# [[rules]]
+# id = "colombian-bank-account"
+# description = "Colombian bank account number in assignment context"
+# regex = '''(?i)(?:cuenta|account|ahorros|corriente)\s*[:=#]?\s*["']?(\d{9,16})["']?'''
+# secretGroup = 1
+# keywords = ["cuenta", "ahorros", "corriente"]
+# tags = ["pii", "colombia", "bank-account"]
+
+# -----------------------------------------------------------------------------
+# Allowlist — known non-secrets
+# -----------------------------------------------------------------------------
+
+[[allowlists]]
+description = "Common non-secrets and test fixtures"
+paths = [
+    '''(^|/)\.venv/''',
+    '''(^|/)\.ruff_cache/''',
+    '''(^|/)\.pytest_cache/''',
+    '''(^|/)__pycache__/''',
+    '''(^|/)tests?/fixtures/''',
+    '''(^|/)__fixtures__/''',
+    '''\.lock$''',           # uv.lock, etc.
+]
+regexes = [
+    # Zero GUIDs are placeholders, not secrets
+    '''00000000-0000-0000-0000-000000000000''',
+    '''11111111-1111-1111-1111-111111111111''',
+    # Public key/cert headers are not secrets
+    '''-----BEGIN PUBLIC KEY-----''',
+    '''-----BEGIN CERTIFICATE-----''',
+    # OpenSSH public keys in authorized_keys format
+    '''ssh-(rsa|ed25519|dss) AAAA[A-Za-z0-9+/=]+''',
+    '''ecdsa-sha2-nistp(256|384|521) AAAA[A-Za-z0-9+/=]+''',
+]
+# Per-commit allowlist via trailing `# betterleaks:allow` (or legacy
+# `# gitleaks:allow`) comment is also supported.

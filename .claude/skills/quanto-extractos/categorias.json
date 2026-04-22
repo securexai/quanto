@@ -52,10 +52,10 @@
     { "keywords": ["AMAZON COM", "AMAZON MARK", "AMAZON MKTPL"], "categoria": "compras_online", "subcategoria": "amazon" },
     { "keywords": ["MERCADO PAGO"], "categoria": "compras_online", "subcategoria": "mercado_pago" },
     { "keywords": ["2CO.COMNLITESOFT"], "categoria": "suscripciones", "subcategoria": "software_otros" },
-    { "keywords": ["SERVICIOS WEB EBANX COM"], "categoria": "suscripciones", "subcategoria": "software_otros" },
+    { "keywords": ["SERVICIOS WEB EBANX COM"], "categoria": "suscripciones", "subcategoria": "streaming" },
     { "keywords": ["WOOTING STORE", "WOOPI"], "categoria": "compras_online", "subcategoria": "hardware_otros" },
 
-    { "keywords": ["ADEINCO"], "categoria": "compras_otros", "subcategoria": "general" },
+    { "keywords": ["ADEINCO"], "categoria": "seguros", "subcategoria": "moto" },
     { "keywords": ["DOLLARCITY", "MR BONO"], "categoria": "compras_otros", "subcategoria": "retail" },
 
     { "keywords": ["TRANSFERENCIA ENVIADA A DAVIPLATA"], "categoria": "transferencia_interna", "subcategoria": "daviplata" },

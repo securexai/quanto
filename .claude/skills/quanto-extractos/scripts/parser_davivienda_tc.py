@@ -1,4 +1,5 @@
 """Parse Davivienda credit card PDF extracto into normalized JSON."""
+
 from __future__ import annotations
 
 import argparse
@@ -9,8 +10,18 @@ import sys
 from pathlib import Path
 
 MESES_ABREV = {
-    "Ene": 1, "Feb": 2, "Mar": 3, "Abr": 4, "May": 5, "Jun": 6,
-    "Jul": 7, "Ago": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dic": 12,
+    "Ene": 1,
+    "Feb": 2,
+    "Mar": 3,
+    "Abr": 4,
+    "May": 5,
+    "Jun": 6,
+    "Jul": 7,
+    "Ago": 8,
+    "Sep": 9,
+    "Oct": 10,
+    "Nov": 11,
+    "Dic": 12,
 }
 
 PERIODO_RE = re.compile(
@@ -46,7 +57,9 @@ RESUMEN_PATTERNS = {
 def run_pdftotext(pdf_path: Path) -> str:
     res = subprocess.run(
         ["pdftotext", "-layout", str(pdf_path), "-"],
-        capture_output=True, check=True, text=True,
+        capture_output=True,
+        check=True,
+        text=True,
     )
     return res.stdout
 
@@ -100,8 +113,14 @@ def extract_movimientos(text: str) -> tuple[list[dict], list[dict], list[dict], 
         if stripped.startswith("Detalle otros cargos"):
             section = "otros"
             continue
-        if stripped.startswith(("Para pagar tu tarjeta", "Para tener en cuenta",
-                                 "Usted podrá conocer", "NUNCA ENTREGUE")):
+        if stripped.startswith(
+            (
+                "Para pagar tu tarjeta",
+                "Para tener en cuenta",
+                "Usted podrá conocer",
+                "NUNCA ENTREGUE",
+            )
+        ):
             section = None
             continue
         if section is None:
@@ -129,27 +148,31 @@ def extract_movimientos(text: str) -> tuple[list[dict], list[dict], list[dict], 
             m = PAGO_RE.match(line)
             if m:
                 g = m.groups()
-                pagos.append({
-                    "fecha": fecha_iso(g[0], g[1], g[2]),
-                    "total_pagado": parse_money(g[3]),
-                    "aplicado_compras": parse_money(g[4]),
-                    "aplicado_avances": parse_money(g[5]),
-                    "aplicado_intereses": parse_money(g[6]),
-                    "aplicado_intereses_mora": parse_money(g[7]),
-                    "aplicado_cuota_manejo": parse_money(g[8]),
-                    "aplicado_otros_cargos": parse_money(g[9]),
-                    "saldo_a_favor": parse_money(g[10]),
-                })
+                pagos.append(
+                    {
+                        "fecha": fecha_iso(g[0], g[1], g[2]),
+                        "total_pagado": parse_money(g[3]),
+                        "aplicado_compras": parse_money(g[4]),
+                        "aplicado_avances": parse_money(g[5]),
+                        "aplicado_intereses": parse_money(g[6]),
+                        "aplicado_intereses_mora": parse_money(g[7]),
+                        "aplicado_cuota_manejo": parse_money(g[8]),
+                        "aplicado_otros_cargos": parse_money(g[9]),
+                        "saldo_a_favor": parse_money(g[10]),
+                    }
+                )
         elif section == "otros":
             m = OTRO_CARGO_RE.match(line)
             if m:
                 dd, mmm, yyyy, desc, num, val = m.groups()
-                otros_cargos.append({
-                    "fecha": fecha_iso(dd, mmm, yyyy),
-                    "descripcion": desc.strip(),
-                    "trans_num": num,
-                    "valor": parse_money(val),
-                })
+                otros_cargos.append(
+                    {
+                        "fecha": fecha_iso(dd, mmm, yyyy),
+                        "descripcion": desc.strip(),
+                        "trans_num": num,
+                        "valor": parse_money(val),
+                    }
+                )
     return compras_periodo, compras_anteriores, pagos, otros_cargos
 
 
@@ -165,15 +188,20 @@ def validate(resumen: dict, compras: list[dict], pagos: list[dict], otros: list[
     pago_total_exp = resumen.get("pago_total", 0)
 
     compras_parsed = sum(
-        c["valor_transaccion"] for c in compras
-        if "INTERES CORRIEN" not in c["descripcion"].upper()
+        c["valor_transaccion"] for c in compras if "INTERES CORRIEN" not in c["descripcion"].upper()
     )
     pagos_parsed = sum(p["total_pagado"] for p in pagos)
     otros_parsed = sum(o["valor"] for o in otros)
 
     calc_pago_total = (
-        saldo_ant + compras_exp + avances_exp + cuota_manejo
-        + intereses_corr + intereses_mora + otros_exp - pagos_exp
+        saldo_ant
+        + compras_exp
+        + avances_exp
+        + cuota_manejo
+        + intereses_corr
+        + intereses_mora
+        + otros_exp
+        - pagos_exp
     )
 
     tol = 2
@@ -228,11 +256,23 @@ def main() -> None:
 
     if args.verbose:
         print(f"[TC Davivienda {periodo['inicio']} .. {periodo['fin']}]", file=sys.stderr)
-        print(f"  compras periodo:      {len(compras_periodo):>3} items, ${val['compras_parseadas']:>12,} (esperado ${val['compras_esperadas']:,}, diff {val['diff_compras']:+,})", file=sys.stderr)
+        print(
+            f"  compras periodo:      {len(compras_periodo):>3} items, ${val['compras_parseadas']:>12,} (esperado ${val['compras_esperadas']:,}, diff {val['diff_compras']:+,})",
+            file=sys.stderr,
+        )
         print(f"  compras anteriores:   {len(compras_anteriores):>3} items (info)", file=sys.stderr)
-        print(f"  pagos:                {len(pagos):>3} items, ${val['pagos_parseados']:>12,} (esperado ${val['pagos_esperados']:,}, diff {val['diff_pagos']:+,})", file=sys.stderr)
-        print(f"  otros cargos:         {len(otros):>3} items, ${val['otros_parseados']:>12,} (esperado ${val['otros_esperados']:,}, diff {val['diff_otros']:+,})", file=sys.stderr)
-        print(f"  pago total calculado: ${val['pago_total_calculado']:>12,} (esperado ${val['pago_total_esperado']:,}, diff {val['diff_pago_total']:+,})", file=sys.stderr)
+        print(
+            f"  pagos:                {len(pagos):>3} items, ${val['pagos_parseados']:>12,} (esperado ${val['pagos_esperados']:,}, diff {val['diff_pagos']:+,})",
+            file=sys.stderr,
+        )
+        print(
+            f"  otros cargos:         {len(otros):>3} items, ${val['otros_parseados']:>12,} (esperado ${val['otros_esperados']:,}, diff {val['diff_otros']:+,})",
+            file=sys.stderr,
+        )
+        print(
+            f"  pago total calculado: ${val['pago_total_calculado']:>12,} (esperado ${val['pago_total_esperado']:,}, diff {val['diff_pago_total']:+,})",
+            file=sys.stderr,
+        )
         ok = val["ok_compras"] and val["ok_pagos"] and val["ok_otros"] and val["ok_pago_total"]
         print(f"  validacion: {'OK' if ok else 'FAIL'}", file=sys.stderr)
     if not (val["ok_compras"] and val["ok_pagos"] and val["ok_otros"] and val["ok_pago_total"]):

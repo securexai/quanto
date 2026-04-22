@@ -1,4 +1,5 @@
 """Parse Davivienda savings account PDF extracto into normalized JSON."""
+
 from __future__ import annotations
 
 import argparse
@@ -9,8 +10,18 @@ import sys
 from pathlib import Path
 
 MESES = {
-    "ENERO": 1, "FEBRERO": 2, "MARZO": 3, "ABRIL": 4, "MAYO": 5, "JUNIO": 6,
-    "JULIO": 7, "AGOSTO": 8, "SEPTIEMBRE": 9, "OCTUBRE": 10, "NOVIEMBRE": 11, "DICIEMBRE": 12,
+    "ENERO": 1,
+    "FEBRERO": 2,
+    "MARZO": 3,
+    "ABRIL": 4,
+    "MAYO": 5,
+    "JUNIO": 6,
+    "JULIO": 7,
+    "AGOSTO": 8,
+    "SEPTIEMBRE": 9,
+    "OCTUBRE": 10,
+    "NOVIEMBRE": 11,
+    "DICIEMBRE": 12,
 }
 
 MONTH_HEADER_RE = re.compile(r"INFORME DEL MES:\s+([A-ZÑ]+)\s*/\s*(\d{4})")
@@ -31,7 +42,9 @@ SUMMARY_LABELS = {
 def run_pdftotext(pdf_path: Path) -> str:
     result = subprocess.run(
         ["pdftotext", "-layout", str(pdf_path), "-"],
-        capture_output=True, check=True, text=True,
+        capture_output=True,
+        check=True,
+        text=True,
     )
     return result.stdout
 
@@ -141,11 +154,17 @@ def main() -> None:
     out.write_text(json.dumps(doc, indent=2, ensure_ascii=False))
 
     if args.verbose:
-        print(f"[{year:04d}-{month:02d}] movimientos cuenta: {len(cuenta)} bolsillo: {len(bolsillo)}", file=sys.stderr)
+        print(
+            f"[{year:04d}-{month:02d}] movimientos cuenta: {len(cuenta)} bolsillo: {len(bolsillo)}",
+            file=sys.stderr,
+        )
         print(f"  saldo anterior:  {summary.get('saldo_anterior'):>18,.2f}", file=sys.stderr)
         print(f"  cuenta net:      {val['cuenta_net']:>+18,.2f}", file=sys.stderr)
         print(f"  bolsillo net:    {val['bolsillo_net']:>+18,.2f}", file=sys.stderr)
-        print(f"  saldo calculado: {val['saldo_calculado']:>18,.2f} (esperado {val['saldo_esperado']:,.2f}, diff {val['diff_saldo']:+,.2f})", file=sys.stderr)
+        print(
+            f"  saldo calculado: {val['saldo_calculado']:>18,.2f} (esperado {val['saldo_esperado']:,.2f}, diff {val['diff_saldo']:+,.2f})",
+            file=sys.stderr,
+        )
         print(f"  validacion: {'OK' if val['ok_saldo'] else 'FAIL'}", file=sys.stderr)
     if not val["ok_saldo"]:
         sys.exit(2)

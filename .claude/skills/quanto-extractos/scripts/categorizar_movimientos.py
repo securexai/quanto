@@ -1,12 +1,12 @@
 """Categoriza movimientos de los 4 productos aplicando categorias.json.
 Emite analisis/{mes}/movimientos-categorizados.json y gastos-por-categoria.json."""
+
 from __future__ import annotations
 
 import argparse
 import json
 from collections import defaultdict
 from pathlib import Path
-
 
 ROOT = Path(__file__).resolve().parents[3]
 CATEGORIAS_PATH = Path(__file__).resolve().parent.parent / "categorias.json"
@@ -27,7 +27,7 @@ def categorizar(descripcion: str, reglas: list[dict]) -> tuple[str, str]:
 
 def to_signed_int(value) -> int:
     """Return value as integer COP (cents truncated — amounts are always whole pesos in practice)."""
-    return int(round(value))
+    return round(value)
 
 
 def procesar_mes(mes: str) -> None:
@@ -45,61 +45,69 @@ def procesar_mes(mes: str) -> None:
         cat, sub = categorizar(m["descripcion"], reglas)
         if m.get("transferencia_interna"):
             cat, sub = "transferencia_interna", m.get("match_tipo", "otro")
-        movimientos.append({
-            "producto": "davivienda-ahorros",
-            "seccion": "cuenta",
-            "fecha": m["fecha"],
-            "descripcion": m["descripcion"],
-            "valor": to_signed_int(m["valor"]),
-            "tipo": m["tipo"],
-            "categoria": cat,
-            "subcategoria": sub,
-            "transferencia_interna": m.get("transferencia_interna", False),
-        })
+        movimientos.append(
+            {
+                "producto": "davivienda-ahorros",
+                "seccion": "cuenta",
+                "fecha": m["fecha"],
+                "descripcion": m["descripcion"],
+                "valor": to_signed_int(m["valor"]),
+                "tipo": m["tipo"],
+                "categoria": cat,
+                "subcategoria": sub,
+                "transferencia_interna": m.get("transferencia_interna", False),
+            }
+        )
     for m in ahorros.get("bolsillo", []):
         cat, sub = categorizar(m["descripcion"], reglas)
         # Bolsillo items are internal between cuenta ↔ bolsillo
         cat, sub = "transferencia_interna", "bolsillo"
-        movimientos.append({
-            "producto": "davivienda-ahorros",
-            "seccion": "bolsillo",
-            "fecha": m["fecha"],
-            "descripcion": m["descripcion"],
-            "valor": to_signed_int(m["valor"]),
-            "tipo": m["tipo"],
-            "categoria": cat,
-            "subcategoria": sub,
-            "transferencia_interna": True,
-        })
+        movimientos.append(
+            {
+                "producto": "davivienda-ahorros",
+                "seccion": "bolsillo",
+                "fecha": m["fecha"],
+                "descripcion": m["descripcion"],
+                "valor": to_signed_int(m["valor"]),
+                "tipo": m["tipo"],
+                "categoria": cat,
+                "subcategoria": sub,
+                "transferencia_interna": True,
+            }
+        )
 
     # Davivienda TC — compras del periodo (negativos = gasto). Intereses y otros cargos también.
     for c in tc_davi["compras_periodo"]:
         desc = c["descripcion"]
         cat, sub = categorizar(desc, reglas)
-        movimientos.append({
-            "producto": "davivienda-tc",
-            "seccion": "compras_periodo",
-            "fecha": c["fecha"],
-            "descripcion": desc,
-            "valor": -to_signed_int(c["valor_transaccion"]),  # gasto es negativo
-            "tipo": "debito",
-            "categoria": cat,
-            "subcategoria": sub,
-            "cuota_actual": c["cuota_actual"],
-            "cuota_total": c["cuota_total"],
-        })
+        movimientos.append(
+            {
+                "producto": "davivienda-tc",
+                "seccion": "compras_periodo",
+                "fecha": c["fecha"],
+                "descripcion": desc,
+                "valor": -to_signed_int(c["valor_transaccion"]),  # gasto es negativo
+                "tipo": "debito",
+                "categoria": cat,
+                "subcategoria": sub,
+                "cuota_actual": c["cuota_actual"],
+                "cuota_total": c["cuota_total"],
+            }
+        )
     for o in tc_davi["otros_cargos"]:
         cat, sub = categorizar(o["descripcion"], reglas)
-        movimientos.append({
-            "producto": "davivienda-tc",
-            "seccion": "otros_cargos",
-            "fecha": o["fecha"],
-            "descripcion": o["descripcion"],
-            "valor": -to_signed_int(o["valor"]),
-            "tipo": "debito",
-            "categoria": cat,
-            "subcategoria": sub,
-        })
+        movimientos.append(
+            {
+                "producto": "davivienda-tc",
+                "seccion": "otros_cargos",
+                "fecha": o["fecha"],
+                "descripcion": o["descripcion"],
+                "valor": -to_signed_int(o["valor"]),
+                "tipo": "debito",
+                "categoria": cat,
+                "subcategoria": sub,
+            }
+        )
 
     # Davibank TC — compras periodo + anteriores con cuota==1 no canceladas
     for c in tc_davibank["compras_periodo"]:
@@ -107,49 +115,55 @@ def procesar_mes(mes: str) -> None:
             continue
         desc = c["descripcion"]
         cat, sub = categorizar(desc, reglas)
-        movimientos.append({
-            "producto": "davibank-tc",
-            "seccion": "compras_periodo",
-            "fecha": c["fecha"],
-            "descripcion": desc,
-            "valor": -to_signed_int(c["valor_transaccion"]),
-            "tipo": "debito",
-            "categoria": cat,
-            "subcategoria": sub,
-            "cuota_actual": c["cuota_actual"],
-            "cuota_total": c["cuota_total"],
-            "tarjetahabiente": c.get("tarjetahabiente"),
-        })
+        movimientos.append(
+            {
+                "producto": "davibank-tc",
+                "seccion": "compras_periodo",
+                "fecha": c["fecha"],
+                "descripcion": desc,
+                "valor": -to_signed_int(c["valor_transaccion"]),
+                "tipo": "debito",
+                "categoria": cat,
+                "subcategoria": sub,
+                "cuota_actual": c["cuota_actual"],
+                "cuota_total": c["cuota_total"],
+                "tarjetahabiente": c.get("tarjetahabiente"),
+            }
+        )
     for c in tc_davibank["compras_meses_anteriores"]:
         if c.get("cancelado") or c["cuota_actual"] != 1:
             continue
         desc = c["descripcion"]
         cat, sub = categorizar(desc, reglas)
-        movimientos.append({
-            "producto": "davibank-tc",
-            "seccion": "compras_anteriores_nuevas",
-            "fecha": c["fecha"],
-            "descripcion": desc,
-            "valor": -to_signed_int(c["valor_transaccion"]),
-            "tipo": "debito",
-            "categoria": cat,
-            "subcategoria": sub,
-            "cuota_actual": c["cuota_actual"],
-            "cuota_total": c["cuota_total"],
-            "tarjetahabiente": c.get("tarjetahabiente"),
-        })
+        movimientos.append(
+            {
+                "producto": "davibank-tc",
+                "seccion": "compras_anteriores_nuevas",
+                "fecha": c["fecha"],
+                "descripcion": desc,
+                "valor": -to_signed_int(c["valor_transaccion"]),
+                "tipo": "debito",
+                "categoria": cat,
+                "subcategoria": sub,
+                "cuota_actual": c["cuota_actual"],
+                "cuota_total": c["cuota_total"],
+                "tarjetahabiente": c.get("tarjetahabiente"),
+            }
+        )
     for o in tc_davibank["otros_cargos"]:
         cat, sub = categorizar(o["descripcion"], reglas)
-        movimientos.append({
-            "producto": "davibank-tc",
-            "seccion": "otros_cargos",
-            "fecha": o["fecha"],
-            "descripcion": o["descripcion"],
-            "valor": -to_signed_int(o["valor"]),
-            "tipo": "debito" if o["valor"] > 0 else "credito",
-            "categoria": cat,
-            "subcategoria": sub,
-        })
+        movimientos.append(
+            {
+                "producto": "davibank-tc",
+                "seccion": "otros_cargos",
+                "fecha": o["fecha"],
+                "descripcion": o["descripcion"],
+                "valor": -to_signed_int(o["valor"]),
+                "tipo": "debito" if o["valor"] > 0 else "credito",
+                "categoria": cat,
+                "subcategoria": sub,
+            }
+        )
 
     # Nequi
     for m in nequi["movimientos"]:
@@ -157,17 +171,19 @@ def procesar_mes(mes: str) -> None:
         cat, sub = categorizar(desc, reglas)
         if m.get("transferencia_interna"):
             cat, sub = "transferencia_interna", m.get("match_tipo", "fondeo_nequi")
-        movimientos.append({
-            "producto": "nequi",
-            "seccion": "movimientos",
-            "fecha": m["fecha"],
-            "descripcion": desc,
-            "valor": to_signed_int(m["valor"]),
-            "tipo": m["tipo"],
-            "categoria": cat,
-            "subcategoria": sub,
-            "transferencia_interna": m.get("transferencia_interna", False),
-        })
+        movimientos.append(
+            {
+                "producto": "nequi",
+                "seccion": "movimientos",
+                "fecha": m["fecha"],
+                "descripcion": desc,
+                "valor": to_signed_int(m["valor"]),
+                "tipo": m["tipo"],
+                "categoria": cat,
+                "subcategoria": sub,
+                "transferencia_interna": m.get("transferencia_interna", False),
+            }
+        )
 
     # Ordenar por fecha
     movimientos.sort(key=lambda x: (x["fecha"], x["producto"]))
@@ -175,8 +191,6 @@ def procesar_mes(mes: str) -> None:
     # Categorías excluidas del P&L (no son gasto/ingreso operacional):
     # - transferencia_interna: movimientos entre productos propios
     # - inversion: reasignación de capital entre liquidez e inversiones
-    EXCLUIR_PYL = {"transferencia_interna", "inversion"}
-
     gastos_cat: dict[tuple, int] = defaultdict(int)
     ingresos_cat: dict[tuple, int] = defaultdict(int)
     inversion_cat: dict[tuple, int] = defaultdict(int)
@@ -211,22 +225,37 @@ def procesar_mes(mes: str) -> None:
     ingresos_sorted = dict(sorted(ingresos_resumen.items(), key=lambda x: -x[1]["total"]))
 
     out_mov = dir_mes / "movimientos-categorizados.json"
-    out_mov.write_text(json.dumps({
-        "mes": mes,
-        "total_movimientos": len(movimientos),
-        "movimientos": movimientos,
-    }, indent=2, ensure_ascii=False))
+    out_mov.write_text(
+        json.dumps(
+            {
+                "mes": mes,
+                "total_movimientos": len(movimientos),
+                "movimientos": movimientos,
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
 
     out_gastos = dir_mes / "gastos-por-categoria.json"
-    out_gastos.write_text(json.dumps({
-        "mes": mes,
-        "totales": {"gastos": total_gastos, "ingresos": total_ingresos,
+    out_gastos.write_text(
+        json.dumps(
+            {
+                "mes": mes,
+                "totales": {
+                    "gastos": total_gastos,
+                    "ingresos": total_ingresos,
                     "ahorro_neto": total_ingresos - total_gastos,
-                    "flujo_neto_inversion": inversion_net},
-        "gastos": gastos_sorted,
-        "ingresos": ingresos_sorted,
-        "inversion": {f"{k[0]}/{k[1]}": v for k, v in inversion_detalle.items()},
-    }, indent=2, ensure_ascii=False))
+                    "flujo_neto_inversion": inversion_net,
+                },
+                "gastos": gastos_sorted,
+                "ingresos": ingresos_sorted,
+                "inversion": {f"{k[0]}/{k[1]}": v for k, v in inversion_detalle.items()},
+            },
+            indent=2,
+            ensure_ascii=False,
+        )
+    )
 
     print(f"[{mes}] categorizar:")
     print(f"  movimientos: {len(movimientos)}")
@@ -237,7 +266,9 @@ def procesar_mes(mes: str) -> None:
     if sin_cat:
         print(f"  sin_clasificar: {len(sin_cat)} items")
         for m in sin_cat[:10]:
-            print(f"    {m['fecha']} {m['producto']:<20} ${m['valor']:>+12,}  {m['descripcion'][:50]}")
+            print(
+                f"    {m['fecha']} {m['producto']:<20} ${m['valor']:>+12,}  {m['descripcion'][:50]}"
+            )
 
 
 def main() -> None:

@@ -1,4 +1,5 @@
 """Genera dashboard HTML editorial a partir del análisis trimestral."""
+
 from __future__ import annotations
 
 import argparse
@@ -12,9 +13,18 @@ def load(path: Path) -> dict:
 
 
 MES_NOMBRES = {
-    "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril",
-    "05": "Mayo", "06": "Junio", "07": "Julio", "08": "Agosto",
-    "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre",
+    "01": "Enero",
+    "02": "Febrero",
+    "03": "Marzo",
+    "04": "Abril",
+    "05": "Mayo",
+    "06": "Junio",
+    "07": "Julio",
+    "08": "Agosto",
+    "09": "Septiembre",
+    "10": "Octubre",
+    "11": "Noviembre",
+    "12": "Diciembre",
 }
 
 
@@ -62,15 +72,15 @@ def render(analisis: dict, output: Path) -> None:
     # Progresión mensual: filas
     prog_rows = "\n".join(
         f"""<tr>
-            <td>{pretty_mes(p['mes'])}</td>
-            <td class="num pos">{fmt_money(p['ingresos'])}</td>
-            <td class="num neg">{fmt_money(p['gastos'])}</td>
-            <td class="num">{fmt_money(p['ahorro_neto'], plus=True)}</td>
-            <td class="num">{fmt_money(p['compras_tc'])}</td>
-            <td class="num">{fmt_money(p['intereses_tc'])}</td>
-            <td class="num">{fmt_money(p['patrimonio_liquido'])}</td>
-            <td class="num">{fmt_money(p['deuda_tc'])}</td>
-            <td class="num strong">{fmt_money(p['patrimonio_neto'])}</td>
+            <td>{pretty_mes(p["mes"])}</td>
+            <td class="num pos">{fmt_money(p["ingresos"])}</td>
+            <td class="num neg">{fmt_money(p["gastos"])}</td>
+            <td class="num">{fmt_money(p["ahorro_neto"], plus=True)}</td>
+            <td class="num">{fmt_money(p["compras_tc"])}</td>
+            <td class="num">{fmt_money(p["intereses_tc"])}</td>
+            <td class="num">{fmt_money(p["patrimonio_liquido"])}</td>
+            <td class="num">{fmt_money(p["deuda_tc"])}</td>
+            <td class="num strong">{fmt_money(p["patrimonio_neto"])}</td>
           </tr>"""
         for p in prog
     )
@@ -86,7 +96,7 @@ def render(analisis: dict, output: Path) -> None:
             f"""<details class="cat-detail">
                  <summary>
                    <span class="cat-name">{escape(cat)}</span>
-                   <span class="cat-total num">{fmt_money(data['total'])}</span>
+                   <span class="cat-total num">{fmt_money(data["total"])}</span>
                  </summary>
                  <div class="sub-list">{subs_html}</div>
                </details>"""
@@ -104,7 +114,7 @@ def render(analisis: dict, output: Path) -> None:
             f"""<details class="cat-detail">
                  <summary>
                    <span class="cat-name">{escape(cat)}</span>
-                   <span class="cat-total num pos">{fmt_money(data['total'])}</span>
+                   <span class="cat-total num pos">{fmt_money(data["total"])}</span>
                  </summary>
                  <div class="sub-list">{subs_html}</div>
                </details>"""
@@ -114,11 +124,11 @@ def render(analisis: dict, output: Path) -> None:
     # Suscripciones
     susc_rows = "\n".join(
         f"""<tr>
-             <td>{escape(s['merchant'][:40])}</td>
-             <td>{escape(s['categoria'])}/{escape(s['subcategoria'])}</td>
-             <td class="num">{fmt_money(s['monto_promedio'])}</td>
-             <td class="num">{fmt_money(s['monto_min'])} – {fmt_money(s['monto_max'])}</td>
-             <td>{'Estable' if s['estable'] else f"Variable (CV {s['coef_variacion']:.2f})"}</td>
+             <td>{escape(s["merchant"][:40])}</td>
+             <td>{escape(s["categoria"])}/{escape(s["subcategoria"])}</td>
+             <td class="num">{fmt_money(s["monto_promedio"])}</td>
+             <td class="num">{fmt_money(s["monto_min"])} – {fmt_money(s["monto_max"])}</td>
+             <td>{"Estable" if s["estable"] else f"Variable (CV {s['coef_variacion']:.2f})"}</td>
            </tr>"""
         for s in suscripciones
     )
@@ -126,11 +136,11 @@ def render(analisis: dict, output: Path) -> None:
     # Anomalías
     anom_rows = "\n".join(
         f"""<tr>
-             <td>{escape(a['fecha'])}</td>
-             <td class="num neg">{fmt_money(abs(a['valor']))}</td>
-             <td>{escape(a['categoria'])}/{escape(a['subcategoria'])}</td>
-             <td>{escape(a['descripcion'][:50])}</td>
-             <td class="num">{a['z_score']}σ</td>
+             <td>{escape(a["fecha"])}</td>
+             <td class="num neg">{fmt_money(abs(a["valor"]))}</td>
+             <td>{escape(a["categoria"])}/{escape(a["subcategoria"])}</td>
+             <td>{escape(a["descripcion"][:50])}</td>
+             <td class="num">{a["z_score"]}σ</td>
            </tr>"""
         for a in anomalias
     )
@@ -239,23 +249,23 @@ def render(analisis: dict, output: Path) -> None:
 <div class="kpi-grid">
   <div class="kpi">
     <div class="kpi-label">Ingresos</div>
-    <div class="kpi-value pos">{fmt_money(totales['ingresos'])}</div>
-    <div class="kpi-delta">Promedio mensual {fmt_money(totales['ingresos']//len(prog))}</div>
+    <div class="kpi-value pos">{fmt_money(totales["ingresos"])}</div>
+    <div class="kpi-delta">Promedio mensual {fmt_money(totales["ingresos"] // len(prog))}</div>
   </div>
   <div class="kpi">
     <div class="kpi-label">Gastos</div>
-    <div class="kpi-value neg">{fmt_money(totales['gastos'])}</div>
-    <div class="kpi-delta">Promedio mensual {fmt_money(totales['gastos']//len(prog))}</div>
+    <div class="kpi-value neg">{fmt_money(totales["gastos"])}</div>
+    <div class="kpi-delta">Promedio mensual {fmt_money(totales["gastos"] // len(prog))}</div>
   </div>
   <div class="kpi">
     <div class="kpi-label">Ahorro neto</div>
-    <div class="kpi-value pos">{fmt_money(totales['ahorro_neto'], plus=True)}</div>
-    <div class="kpi-delta">Tasa {totales['tasa_ahorro_pct']}%</div>
+    <div class="kpi-value pos">{fmt_money(totales["ahorro_neto"], plus=True)}</div>
+    <div class="kpi-delta">Tasa {totales["tasa_ahorro_pct"]}%</div>
   </div>
   <div class="kpi">
     <div class="kpi-label">Δ Patrimonio neto</div>
-    <div class="kpi-value">{fmt_money(patrim['delta_patrimonio_neto'], plus=True)}</div>
-    <div class="kpi-delta">Fin: {fmt_money(patrim['patrimonio_neto_fin'])}</div>
+    <div class="kpi-value">{fmt_money(patrim["delta_patrimonio_neto"], plus=True)}</div>
+    <div class="kpi-delta">Fin: {fmt_money(patrim["patrimonio_neto_fin"])}</div>
   </div>
 </div>
 
@@ -278,7 +288,7 @@ def render(analisis: dict, output: Path) -> None:
 </table>
 
 <h2>Top categorías de gasto</h2>
-{bar_chart([(cat, data['total']) for cat, data in top_gastos], max_gasto)}
+{bar_chart([(cat, data["total"]) for cat, data in top_gastos], max_gasto)}
 
 <div class="twocol" style="margin-top:32px;">
   <div>
@@ -307,7 +317,7 @@ def render(analisis: dict, output: Path) -> None:
 </table>
 
 <h2>Anomalías estadísticas de gasto</h2>
-<p style="color:var(--muted); font-style:italic;">Transacciones individuales con z-score {'> 3' + 'σ'} respecto a la media de su categoría (y valor &gt; $50k).</p>
+<p style="color:var(--muted); font-style:italic;">Transacciones individuales con z-score {"> 3" + "σ"} respecto a la media de su categoría (y valor &gt; $50k).</p>
 <table>
   <thead>
     <tr>
@@ -325,20 +335,20 @@ def render(analisis: dict, output: Path) -> None:
 <div class="kpi-grid">
   <div class="kpi">
     <div class="kpi-label">Compras del trimestre</div>
-    <div class="kpi-value">{fmt_money(totales['compras_tc_totales'])}</div>
+    <div class="kpi-value">{fmt_money(totales["compras_tc_totales"])}</div>
   </div>
   <div class="kpi">
     <div class="kpi-label">Intereses pagados</div>
-    <div class="kpi-value neg">{fmt_money(totales['intereses_tc_pagados'])}</div>
+    <div class="kpi-value neg">{fmt_money(totales["intereses_tc_pagados"])}</div>
   </div>
   <div class="kpi">
     <div class="kpi-label">Comisiones y seguros</div>
-    <div class="kpi-value neg">{fmt_money(totales['comisiones_y_seguros_tc'])}</div>
+    <div class="kpi-value neg">{fmt_money(totales["comisiones_y_seguros_tc"])}</div>
   </div>
   <div class="kpi">
     <div class="kpi-label">Deuda TC al cierre</div>
-    <div class="kpi-value">{fmt_money(patrim['deuda_tc_fin'])}</div>
-    <div class="kpi-delta">Δ trimestre {fmt_money(patrim['delta_deuda_tc'], plus=True)}</div>
+    <div class="kpi-value">{fmt_money(patrim["deuda_tc_fin"])}</div>
+    <div class="kpi-delta">Δ trimestre {fmt_money(patrim["delta_deuda_tc"], plus=True)}</div>
   </div>
 </div>
 
@@ -346,21 +356,21 @@ def render(analisis: dict, output: Path) -> None:
 <div class="kpi-grid">
   <div class="kpi">
     <div class="kpi-label">Liquidez inicio</div>
-    <div class="kpi-value">{fmt_money(patrim['liquidez_inicio'])}</div>
+    <div class="kpi-value">{fmt_money(patrim["liquidez_inicio"])}</div>
   </div>
   <div class="kpi">
     <div class="kpi-label">Liquidez cierre</div>
-    <div class="kpi-value">{fmt_money(patrim['liquidez_fin'])}</div>
-    <div class="kpi-delta pos">{fmt_money(patrim['delta_liquidez'], plus=True)}</div>
+    <div class="kpi-value">{fmt_money(patrim["liquidez_fin"])}</div>
+    <div class="kpi-delta pos">{fmt_money(patrim["delta_liquidez"], plus=True)}</div>
   </div>
   <div class="kpi">
     <div class="kpi-label">Flujo neto de inversión</div>
-    <div class="kpi-value">{fmt_money(totales['flujo_inversion'], plus=True)}</div>
+    <div class="kpi-value">{fmt_money(totales["flujo_inversion"], plus=True)}</div>
     <div class="kpi-delta">Compra/retorno de títulos</div>
   </div>
   <div class="kpi">
     <div class="kpi-label">Patrimonio neto cierre</div>
-    <div class="kpi-value strong">{fmt_money(patrim['patrimonio_neto_fin'])}</div>
+    <div class="kpi-value strong">{fmt_money(patrim["patrimonio_neto_fin"])}</div>
   </div>
 </div>
 

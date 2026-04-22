@@ -1,12 +1,13 @@
 """Match internal transfers across bank products: mark TC payments from ahorros
 and Nequi fundings (BRE-B) from Davivienda ahorros so they don't double-count as
 expense/income."""
+
 from __future__ import annotations
 
 import argparse
 import json
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
 
@@ -27,7 +28,8 @@ def match_tc_davivienda(ahorros: dict, tc_davi: dict) -> list[dict]:
     Davivienda TC shows a matching payment in 'pagos' list."""
     matches = []
     ahorros_pagos_tc = [
-        m for m in ahorros["movimientos"]
+        m
+        for m in ahorros["movimientos"]
         if "Pago Tarj. Credito" in m["descripcion"] and m["valor"] < 0
     ]
     tc_pagos = list(tc_davi.get("pagos", []))
@@ -45,13 +47,15 @@ def match_tc_davivienda(ahorros: dict, tc_davi: dict) -> list[dict]:
                 break
         if best_idx is not None:
             used_tc_idx.add(best_idx)
-            matches.append({
-                "tipo": "pago_tc_davivienda",
-                "ahorros_doc": mov["doc"],
-                "ahorros_fecha": mov["fecha"],
-                "tc_fecha": tc_pagos[best_idx]["fecha"],
-                "monto": monto,
-            })
+            matches.append(
+                {
+                    "tipo": "pago_tc_davivienda",
+                    "ahorros_doc": mov["doc"],
+                    "ahorros_fecha": mov["fecha"],
+                    "tc_fecha": tc_pagos[best_idx]["fecha"],
+                    "monto": monto,
+                }
+            )
             mov["transferencia_interna"] = True
             mov["match_tipo"] = "pago_tc_davivienda"
     return matches
@@ -62,7 +66,8 @@ def match_tc_davibank(ahorros: dict, tc_davibank: dict) -> list[dict]:
     ahorros account as 'Compra PAGOS ELECTRONICOS SCOT' (PSE) debits."""
     matches = []
     pse_debits = [
-        m for m in ahorros["movimientos"]
+        m
+        for m in ahorros["movimientos"]
         if "PAGOS ELECTRONICOS SCOT" in m["descripcion"].upper() and m["valor"] < 0
     ]
     tc_pagos = list(tc_davibank.get("pagos", []))
@@ -80,13 +85,15 @@ def match_tc_davibank(ahorros: dict, tc_davibank: dict) -> list[dict]:
                 break
         if best_idx is not None:
             used.add(best_idx)
-            matches.append({
-                "tipo": "pago_tc_davibank",
-                "ahorros_doc": mov["doc"],
-                "ahorros_fecha": mov["fecha"],
-                "tc_fecha": tc_pagos[best_idx]["fecha"],
-                "monto": monto,
-            })
+            matches.append(
+                {
+                    "tipo": "pago_tc_davibank",
+                    "ahorros_doc": mov["doc"],
+                    "ahorros_fecha": mov["fecha"],
+                    "tc_fecha": tc_pagos[best_idx]["fecha"],
+                    "monto": monto,
+                }
+            )
             mov["transferencia_interna"] = True
             mov["match_tipo"] = "pago_tc_davibank"
     return matches
@@ -97,11 +104,15 @@ def match_nequi_fondeo(ahorros: dict, nequi: dict) -> list[dict]:
     matches Nequi credit 'RECIBI POR BRE-B DE: SERGIO'."""
     matches = []
     breb_out = [
-        m for m in ahorros["movimientos"]
-        if "Llave Otra Entidad" in m["descripcion"] and "Transferencia A" in m["descripcion"] and m["valor"] < 0
+        m
+        for m in ahorros["movimientos"]
+        if "Llave Otra Entidad" in m["descripcion"]
+        and "Transferencia A" in m["descripcion"]
+        and m["valor"] < 0
     ]
     nequi_breb_in = [
-        m for m in nequi["movimientos"]
+        m
+        for m in nequi["movimientos"]
         if "RECIBI POR BRE-B" in m["descripcion"].upper() and m["valor"] > 0
     ]
     used_ah = set()
@@ -121,13 +132,15 @@ def match_nequi_fondeo(ahorros: dict, nequi: dict) -> list[dict]:
         if best_idx is not None:
             used_ah.add(best_idx)
             used_ne.add(i)
-            matches.append({
-                "tipo": "fondeo_nequi",
-                "ahorros_doc": breb_out[best_idx]["doc"],
-                "ahorros_fecha": breb_out[best_idx]["fecha"],
-                "nequi_fecha": ni["fecha"],
-                "monto": monto,
-            })
+            matches.append(
+                {
+                    "tipo": "fondeo_nequi",
+                    "ahorros_doc": breb_out[best_idx]["doc"],
+                    "ahorros_fecha": breb_out[best_idx]["fecha"],
+                    "nequi_fecha": ni["fecha"],
+                    "monto": monto,
+                }
+            )
             breb_out[best_idx]["transferencia_interna"] = True
             breb_out[best_idx]["match_tipo"] = "fondeo_nequi"
             ni["transferencia_interna"] = True
@@ -142,12 +155,14 @@ def match_daviplata(ahorros: dict) -> list[dict]:
         if re.search(r"Daviplata", m["descripcion"], re.I) and m["valor"] < 0:
             m["transferencia_interna"] = True
             m["match_tipo"] = "envio_daviplata"
-            matches.append({
-                "tipo": "envio_daviplata",
-                "fecha": m["fecha"],
-                "doc": m["doc"],
-                "monto": abs(m["valor"]),
-            })
+            matches.append(
+                {
+                    "tipo": "envio_daviplata",
+                    "fecha": m["fecha"],
+                    "doc": m["doc"],
+                    "monto": abs(m["valor"]),
+                }
+            )
     return matches
 
 
@@ -178,8 +193,12 @@ def main() -> None:
         "envios_daviplata": len(result["matches_daviplata"]),
         "monto_total_internos": sum(
             m["monto"]
-            for lst in (result["matches_tc_davivienda"], result["matches_tc_davibank"],
-                        result["matches_nequi_fondeo"], result["matches_daviplata"])
+            for lst in (
+                result["matches_tc_davivienda"],
+                result["matches_tc_davibank"],
+                result["matches_nequi_fondeo"],
+                result["matches_daviplata"],
+            )
             for m in lst
         ),
     }
@@ -189,7 +208,7 @@ def main() -> None:
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     dump(args.output, result)
 
-    print(f"[cross-match]")
+    print("[cross-match]")
     print(f"  pagos TC Davivienda: {result['resumen']['tc_davivienda_pagos']}")
     print(f"  pagos TC Davibank:   {result['resumen']['tc_davibank_pagos']}")
     print(f"  fondeos Nequi:       {result['resumen']['nequi_fondeos']}")

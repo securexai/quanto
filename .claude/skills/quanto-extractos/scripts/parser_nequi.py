@@ -1,4 +1,5 @@
 """Parse Nequi PDF extracto into normalized JSON."""
+
 from __future__ import annotations
 
 import argparse
@@ -8,9 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-PERIODO_RE = re.compile(
-    r"período de:\s*(\d{4})/(\d{2})/(\d{2})\s*a\s*(\d{4})/(\d{2})/(\d{2})"
-)
+PERIODO_RE = re.compile(r"período de:\s*(\d{4})/(\d{2})/(\d{2})\s*a\s*(\d{4})/(\d{2})/(\d{2})")
 RESUMEN_PATTERNS = {
     "saldo_anterior": r"Saldo anterior\s+\$([\d,]+\.\d{2})",
     "saldo_promedio": r"Saldo promedio\s+\$([\d,]+\.\d{2})",
@@ -28,8 +27,9 @@ MOV_RE = re.compile(
 
 
 def run_pdftotext(pdf_path: Path) -> str:
-    res = subprocess.run(["pdftotext", "-layout", str(pdf_path), "-"],
-                         capture_output=True, check=True, text=True)
+    res = subprocess.run(
+        ["pdftotext", "-layout", str(pdf_path), "-"], capture_output=True, check=True, text=True
+    )
     return res.stdout
 
 
@@ -62,13 +62,15 @@ def extract_movimientos(text: str) -> list[dict]:
         m = MOV_RE.match(line)
         if m:
             dd, mm, yyyy, desc, valor, saldo = m.groups()
-            movs.append({
-                "fecha": f"{yyyy}-{mm}-{dd}",
-                "descripcion": desc.strip(),
-                "valor": parse_money(valor),
-                "saldo": parse_money(saldo),
-                "tipo": "credito" if not valor.startswith("-") else "debito",
-            })
+            movs.append(
+                {
+                    "fecha": f"{yyyy}-{mm}-{dd}",
+                    "descripcion": desc.strip(),
+                    "valor": parse_money(valor),
+                    "saldo": parse_money(saldo),
+                    "tipo": "credito" if not valor.startswith("-") else "debito",
+                }
+            )
     return movs
 
 
@@ -127,9 +129,18 @@ def main() -> None:
         print(f"[Nequi {periodo['inicio']} .. {periodo['fin']}]", file=sys.stderr)
         print(f"  movimientos: {len(movs)}", file=sys.stderr)
         print(f"  saldo anterior:   ${resumen.get('saldo_anterior', 0):>12,.2f}", file=sys.stderr)
-        print(f"  creditos:         ${val['creditos_parseados']:>12,.2f} (esperado ${val['abonos_esperados']:,.2f}, diff {val['diff_creditos']:+,.2f})", file=sys.stderr)
-        print(f"  debitos:          ${val['debitos_parseados']:>12,.2f} (esperado ${val['cargos_esperados']:,.2f}, diff {val['diff_debitos']:+,.2f})", file=sys.stderr)
-        print(f"  saldo calculado:  ${val['saldo_calculado']:>12,.2f} (esperado ${val['saldo_esperado']:,.2f}, diff {val['diff_saldo']:+,.2f})", file=sys.stderr)
+        print(
+            f"  creditos:         ${val['creditos_parseados']:>12,.2f} (esperado ${val['abonos_esperados']:,.2f}, diff {val['diff_creditos']:+,.2f})",
+            file=sys.stderr,
+        )
+        print(
+            f"  debitos:          ${val['debitos_parseados']:>12,.2f} (esperado ${val['cargos_esperados']:,.2f}, diff {val['diff_debitos']:+,.2f})",
+            file=sys.stderr,
+        )
+        print(
+            f"  saldo calculado:  ${val['saldo_calculado']:>12,.2f} (esperado ${val['saldo_esperado']:,.2f}, diff {val['diff_saldo']:+,.2f})",
+            file=sys.stderr,
+        )
         ok = val["ok_saldo"] and val["ok_creditos"] and val["ok_debitos"]
         print(f"  validacion: {'OK' if ok else 'FAIL'}", file=sys.stderr)
     if not (val["ok_saldo"] and val["ok_creditos"] and val["ok_debitos"]):

@@ -1,4 +1,5 @@
 """Agrega métricas de varios meses, detecta suscripciones recurrentes y anomalías."""
+
 from __future__ import annotations
 
 import argparse
@@ -64,9 +65,11 @@ def procesar(meses: list[str], output: str) -> None:
 
     by_merchant: dict[str, list[dict]] = defaultdict(list)
     for m in movimientos_all:
-        if (m["valor"] < 0
+        if (
+            m["valor"] < 0
             and m["producto"] in ("davivienda-tc", "davibank-tc")
-            and m["categoria"] not in ("transferencia_interna", "inversion")):
+            and m["categoria"] not in ("transferencia_interna", "inversion")
+        ):
             merchant_key = m["descripcion"].upper().strip()
             by_merchant[merchant_key].append(m)
 
@@ -80,23 +83,28 @@ def procesar(meses: list[str], output: str) -> None:
                 continue
             stdev = statistics.pstdev(montos) if len(montos) > 1 else 0
             cv = stdev / avg if avg else 0
-            suscripciones.append({
-                "merchant": merchant,
-                "categoria": items[0]["categoria"],
-                "subcategoria": items[0]["subcategoria"],
-                "meses_vistos": meses_vistos,
-                "cantidad_cobros": len(items),
-                "monto_promedio": round(avg),
-                "monto_min": min(montos),
-                "monto_max": max(montos),
-                "estable": cv <= 0.2,
-                "coef_variacion": round(cv, 3),
-            })
+            suscripciones.append(
+                {
+                    "merchant": merchant,
+                    "categoria": items[0]["categoria"],
+                    "subcategoria": items[0]["subcategoria"],
+                    "meses_vistos": meses_vistos,
+                    "cantidad_cobros": len(items),
+                    "monto_promedio": round(avg),
+                    "monto_min": min(montos),
+                    "monto_max": max(montos),
+                    "estable": cv <= 0.2,
+                    "coef_variacion": round(cv, 3),
+                }
+            )
     suscripciones.sort(key=lambda x: -x["monto_promedio"])
 
     anomalias = []
-    gastos_movs = [m for m in movimientos_all
-                   if m["valor"] < 0 and m["categoria"] not in ("transferencia_interna", "inversion")]
+    gastos_movs = [
+        m
+        for m in movimientos_all
+        if m["valor"] < 0 and m["categoria"] not in ("transferencia_interna", "inversion")
+    ]
     gastos_por_cat: dict[str, list[dict]] = defaultdict(list)
     for m in gastos_movs:
         gastos_por_cat[m["categoria"]].append(m)
@@ -111,17 +119,19 @@ def procesar(meses: list[str], output: str) -> None:
         umbral = media + 3 * sigma
         for m in items:
             if abs(m["valor"]) > umbral and abs(m["valor"]) > 50_000:
-                anomalias.append({
-                    "fecha": m["fecha"],
-                    "producto": m["producto"],
-                    "descripcion": m["descripcion"],
-                    "valor": m["valor"],
-                    "categoria": cat,
-                    "subcategoria": m["subcategoria"],
-                    "media_categoria": round(media),
-                    "desviacion": round(sigma),
-                    "z_score": round((abs(m["valor"]) - media) / sigma, 2),
-                })
+                anomalias.append(
+                    {
+                        "fecha": m["fecha"],
+                        "producto": m["producto"],
+                        "descripcion": m["descripcion"],
+                        "valor": m["valor"],
+                        "categoria": cat,
+                        "subcategoria": m["subcategoria"],
+                        "media_categoria": round(media),
+                        "desviacion": round(sigma),
+                        "z_score": round((abs(m["valor"]) - media) / sigma, 2),
+                    }
+                )
     anomalias.sort(key=lambda x: -x["z_score"])
 
     progresion = [
@@ -156,13 +166,15 @@ def procesar(meses: list[str], output: str) -> None:
         "patrimonio": {
             "liquidez_inicio": inicio["patrimonio_liquido"]["total"],
             "liquidez_fin": ultimo["patrimonio_liquido"]["total"],
-            "delta_liquidez": ultimo["patrimonio_liquido"]["total"] - inicio["patrimonio_liquido"]["total"],
+            "delta_liquidez": ultimo["patrimonio_liquido"]["total"]
+            - inicio["patrimonio_liquido"]["total"],
             "deuda_tc_inicio": inicio["deuda_tc"]["total"],
             "deuda_tc_fin": ultimo["deuda_tc"]["total"],
             "delta_deuda_tc": ultimo["deuda_tc"]["total"] - inicio["deuda_tc"]["total"],
             "patrimonio_neto_inicio": inicio["patrimonio_neto_estimado"],
             "patrimonio_neto_fin": ultimo["patrimonio_neto_estimado"],
-            "delta_patrimonio_neto": ultimo["patrimonio_neto_estimado"] - inicio["patrimonio_neto_estimado"],
+            "delta_patrimonio_neto": ultimo["patrimonio_neto_estimado"]
+            - inicio["patrimonio_neto_estimado"],
         },
         "progresion_mensual": progresion,
         "gastos_por_categoria": gastos_trim,
@@ -178,7 +190,9 @@ def procesar(meses: list[str], output: str) -> None:
     print(f"Análisis {meses[0]} - {meses[-1]}:")
     print(f"  ingresos:               ${total_ingresos:>15,}")
     print(f"  gastos:                 ${total_gastos:>15,}")
-    print(f"  ahorro neto:            ${total_ahorro:>+15,} ({result['totales']['tasa_ahorro_pct']}%)")
+    print(
+        f"  ahorro neto:            ${total_ahorro:>+15,} ({result['totales']['tasa_ahorro_pct']}%)"
+    )
     print(f"  delta patrimonio neto:  ${result['patrimonio']['delta_patrimonio_neto']:>+15,}")
     print(f"  suscripciones detectadas: {len(suscripciones)}")
     print(f"  anomalías detectadas:     {len(anomalias)}")

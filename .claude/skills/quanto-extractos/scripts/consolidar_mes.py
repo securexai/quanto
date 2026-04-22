@@ -1,4 +1,5 @@
 """Consolida métricas mensuales: patrimonio, deuda TC, intereses, ahorro neto."""
+
 from __future__ import annotations
 
 import argparse
@@ -30,17 +31,21 @@ def procesar(mes: str) -> None:
     deuda_tc_total = deuda_tc_davivienda + deuda_tc_davibank
 
     # Intereses pagados en el periodo
-    intereses_tc_davivienda = tc_davi["resumen"].get("intereses_corrientes", 0) + tc_davi["resumen"].get("intereses_mora", 0)
-    intereses_tc_davibank = tc_davibank["resumen"].get("intereses_corrientes", 0) + tc_davibank["resumen"].get("intereses_mora", 0)
+    intereses_tc_davivienda = tc_davi["resumen"].get("intereses_corrientes", 0) + tc_davi[
+        "resumen"
+    ].get("intereses_mora", 0)
+    intereses_tc_davibank = tc_davibank["resumen"].get("intereses_corrientes", 0) + tc_davibank[
+        "resumen"
+    ].get("intereses_mora", 0)
     intereses_total = intereses_tc_davivienda + intereses_tc_davibank
-    comisiones_tc = (tc_davi["resumen"].get("otros_cargos", 0)
-                     + sum(o["valor"] for o in tc_davibank["otros_cargos"] if o["valor"] > 0))
+    comisiones_tc = tc_davi["resumen"].get("otros_cargos", 0) + sum(
+        o["valor"] for o in tc_davibank["otros_cargos"] if o["valor"] > 0
+    )
 
     # Compras del mes en TC (nuevas, no amortizaciones)
     compras_tc_davivienda = tc_davi["resumen"].get("compras_del_mes", 0)
     compras_tc_davibank = sum(
-        c["valor_transaccion"]
-        for c in tc_davibank["compras_periodo"] if not c.get("cancelado")
+        c["valor_transaccion"] for c in tc_davibank["compras_periodo"] if not c.get("cancelado")
     )
     compras_tc_total = compras_tc_davivienda + compras_tc_davibank
 
@@ -106,7 +111,9 @@ def procesar(mes: str) -> None:
 
     print(f"[{mes}] consolidado:")
     print(f"  liquidez total:         ${liquidez_total:>15,.0f}")
-    print(f"  deuda TC total:         ${deuda_tc_total:>15,.0f}  (diferido: ${diferido_total:,.0f})")
+    print(
+        f"  deuda TC total:         ${deuda_tc_total:>15,.0f}  (diferido: ${diferido_total:,.0f})"
+    )
     print(f"  patrimonio neto aprox:  ${liquidez_total - deuda_tc_total:>+15,.0f}")
     print(f"  ingresos:               ${totales['ingresos']:>15,.0f}")
     print(f"  gastos:                 ${totales['gastos']:>15,.0f}")

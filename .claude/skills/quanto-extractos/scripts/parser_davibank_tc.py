@@ -1,4 +1,5 @@
 """Parse Davibank (Scotiabank Colpatria) credit card PDF extracto into normalized JSON."""
+
 from __future__ import annotations
 
 import argparse
@@ -9,13 +10,21 @@ import sys
 from pathlib import Path
 
 MESES_ES = {
-    "ene": 1, "feb": 2, "mar": 3, "abr": 4, "may": 5, "jun": 6,
-    "jul": 7, "ago": 8, "sep": 9, "oct": 10, "nov": 11, "dic": 12,
+    "ene": 1,
+    "feb": 2,
+    "mar": 3,
+    "abr": 4,
+    "may": 5,
+    "jun": 6,
+    "jul": 7,
+    "ago": 8,
+    "sep": 9,
+    "oct": 10,
+    "nov": 11,
+    "dic": 12,
 }
 
-PERIODO_RE = re.compile(
-    r"(\d{2})\s+([a-z]{3})\.\s+(\d{4})\s+al\s+(\d{2})\s+([a-z]{3})\.\s+(\d{4})"
-)
+PERIODO_RE = re.compile(r"(\d{2})\s+([a-z]{3})\.\s+(\d{4})\s+al\s+(\d{2})\s+([a-z]{3})\.\s+(\d{4})")
 
 TRANS_RE = re.compile(
     r"^\s*(\d{2})/(\d{2})/(\d{4})\s+(\d{6})\s+(.{0,40}?)\s*\$\s*(-?[\d.]+)\s+(\d+)\s*/\s*(\d+)\s+\$\s*(-?[\d.]+)\s+\$\s*(-?[\d.]+)\s+([\d,]+)%\s+([\d,]+)%\s*$"
@@ -25,9 +34,7 @@ PAGO_RE = re.compile(
     r"^\s*(\d{2})/(\d{2})/(\d{4})\s+(.+?)\s+\$\s*(-?[\d.]+)\s+\$\s*(-?[\d.]+)\s+\$\s*(-?[\d.]+)\s+\$\s*(-?[\d.]+)\s+\$\s*(-?[\d.]+)\s*$"
 )
 
-OTRO_RE = re.compile(
-    r"^\s*(\d{2})/(\d{2})/(\d{4})\s+(.+?)\s+\$\s*(-?[\d.]+)\s*$"
-)
+OTRO_RE = re.compile(r"^\s*(\d{2})/(\d{2})/(\d{4})\s+(.+?)\s+\$\s*(-?[\d.]+)\s*$")
 
 RESUMEN_PATTERNS = {
     "saldo_anterior": r"\+\s*Saldo anterior\s+\$\s*([\d.]+)",
@@ -43,8 +50,9 @@ RESUMEN_PATTERNS = {
 
 
 def run_pdftotext(pdf_path: Path) -> str:
-    res = subprocess.run(["pdftotext", "-layout", str(pdf_path), "-"],
-                         capture_output=True, check=True, text=True)
+    res = subprocess.run(
+        ["pdftotext", "-layout", str(pdf_path), "-"], capture_output=True, check=True, text=True
+    )
     return res.stdout
 
 
@@ -71,7 +79,7 @@ def extract_periodo(text: str) -> dict:
 
 def extract_resumen(text: str) -> dict:
     idx = text.find("Detalle de pago total")
-    block = text[idx:idx + 4000] if idx >= 0 else text
+    block = text[idx : idx + 4000] if idx >= 0 else text
     out: dict[str, int] = {}
     for key, pat in RESUMEN_PATTERNS.items():
         m = re.search(pat, block, re.MULTILINE | re.DOTALL)
@@ -103,16 +111,26 @@ def extract_movimientos(text: str) -> tuple[list[dict], list[dict], list[dict], 
         if stripped.startswith("Transacciones de periodos anteriores"):
             section = "anteriores"
             continue
-        if stripped.startswith(("Para tener en cuenta", "Consejos financieros",
-                                "Para pagar tu tarjeta", "Defensor Consumidor",
-                                "Tu comprobante")):
+        if stripped.startswith(
+            (
+                "Para tener en cuenta",
+                "Consejos financieros",
+                "Para pagar tu tarjeta",
+                "Defensor Consumidor",
+                "Tu comprobante",
+            )
+        ):
             section = None
             continue
         if section is None:
             continue
 
         holder_m = re.match(r"^\s*(4\d{3})\s+([A-Z ]+?)\s*$", line)
-        if holder_m and section in ("periodo", "anteriores") and len(holder_m.group(2).strip()) >= 3:
+        if (
+            holder_m
+            and section in ("periodo", "anteriores")
+            and len(holder_m.group(2).strip()) >= 3
+        ):
             current_holder = f"{holder_m.group(1)} {holder_m.group(2).strip()}"
             continue
 
@@ -143,30 +161,36 @@ def extract_movimientos(text: str) -> tuple[list[dict], list[dict], list[dict], 
             m = PAGO_RE.match(line)
             if m:
                 dd, mm, yyyy, desc, ac, ao, aic, aim, total = m.groups()
-                pagos.append({
-                    "fecha": fecha_iso(dd, mm, yyyy),
-                    "descripcion": desc.strip(),
-                    "a_capital": parse_money(ac),
-                    "a_otros_cargos": parse_money(ao),
-                    "a_intereses_corrientes": parse_money(aic),
-                    "a_intereses_mora": parse_money(aim),
-                    "total_pago": parse_money(total),
-                })
+                pagos.append(
+                    {
+                        "fecha": fecha_iso(dd, mm, yyyy),
+                        "descripcion": desc.strip(),
+                        "a_capital": parse_money(ac),
+                        "a_otros_cargos": parse_money(ao),
+                        "a_intereses_corrientes": parse_money(aic),
+                        "a_intereses_mora": parse_money(aim),
+                        "total_pago": parse_money(total),
+                    }
+                )
         elif section == "otros":
             if stripped.startswith("Fecha") or stripped.startswith("(DD/MM"):
                 continue
             m = OTRO_RE.match(line)
             if m:
                 dd, mm, yyyy, desc, val = m.groups()
-                otros.append({
-                    "fecha": fecha_iso(dd, mm, yyyy),
-                    "descripcion": desc.strip(),
-                    "valor": parse_money(val),
-                })
+                otros.append(
+                    {
+                        "fecha": fecha_iso(dd, mm, yyyy),
+                        "descripcion": desc.strip(),
+                        "valor": parse_money(val),
+                    }
+                )
     return periodo, anteriores, pagos, otros
 
 
-def validate(resumen: dict, periodo: list[dict], anteriores: list[dict], pagos: list[dict], otros: list[dict]) -> dict:
+def validate(
+    resumen: dict, periodo: list[dict], anteriores: list[dict], pagos: list[dict], otros: list[dict]
+) -> dict:
     saldo_ant = resumen.get("saldo_anterior", 0)
     val_trans_exp = resumen.get("valor_transacciones", 0)
     int_corr = resumen.get("intereses_corrientes", 0)
@@ -177,16 +201,24 @@ def validate(resumen: dict, periodo: list[dict], anteriores: list[dict], pagos: 
     pago_total_exp = resumen.get("pago_total", 0)
 
     # "Valor transacciones del periodo" = all periodo items + anteriores items with cuota_actual==1
-    compras_parsed = (
-        sum(c["valor_transaccion"] for c in periodo)
-        + sum(c["valor_transaccion"] for c in anteriores if c["cuota_actual"] == 1)
+    compras_parsed = sum(c["valor_transaccion"] for c in periodo) + sum(
+        c["valor_transaccion"] for c in anteriores if c["cuota_actual"] == 1
     )
     pagos_parsed = sum(p["total_pago"] for p in pagos)
     # REINTEGRO (negative) is not counted in the summary's "Otros cargos" total
     otros_parsed_summary = sum(o["valor"] for o in otros if o["valor"] > 0)
     otros_parsed = sum(o["valor"] for o in otros)
 
-    calc_pago_total = saldo_ant + val_trans_exp + int_corr + int_mora + avances + otros_parsed_summary - pagos_exp - saldo_favor
+    calc_pago_total = (
+        saldo_ant
+        + val_trans_exp
+        + int_corr
+        + int_mora
+        + avances
+        + otros_parsed_summary
+        - pagos_exp
+        - saldo_favor
+    )
 
     tol = 3
     return {
@@ -238,11 +270,23 @@ def main() -> None:
 
     if args.verbose:
         print(f"[TC Davibank {periodo['inicio']} .. {periodo['fin']}]", file=sys.stderr)
-        print(f"  compras periodo:      {len(compras_p):>3} items, ${val['compras_parseadas']:>12,} (esperado ${val['compras_esperadas']:,}, diff {val['diff_compras']:+,})", file=sys.stderr)
+        print(
+            f"  compras periodo:      {len(compras_p):>3} items, ${val['compras_parseadas']:>12,} (esperado ${val['compras_esperadas']:,}, diff {val['diff_compras']:+,})",
+            file=sys.stderr,
+        )
         print(f"  compras anteriores:   {len(compras_a):>3} items (info)", file=sys.stderr)
-        print(f"  pagos:                {len(pagos):>3} items, ${val['pagos_parseados']:>12,} (esperado ${val['pagos_esperados']:,}, diff {val['diff_pagos']:+,})", file=sys.stderr)
-        print(f"  otros cargos:         {len(otros):>3} items, ${val['otros_parseados']:>12,}", file=sys.stderr)
-        print(f"  pago total calculado: ${val['pago_total_calculado']:>12,} (esperado ${val['pago_total_esperado']:,}, diff {val['diff_pago_total']:+,})", file=sys.stderr)
+        print(
+            f"  pagos:                {len(pagos):>3} items, ${val['pagos_parseados']:>12,} (esperado ${val['pagos_esperados']:,}, diff {val['diff_pagos']:+,})",
+            file=sys.stderr,
+        )
+        print(
+            f"  otros cargos:         {len(otros):>3} items, ${val['otros_parseados']:>12,}",
+            file=sys.stderr,
+        )
+        print(
+            f"  pago total calculado: ${val['pago_total_calculado']:>12,} (esperado ${val['pago_total_esperado']:,}, diff {val['diff_pago_total']:+,})",
+            file=sys.stderr,
+        )
         ok = val["ok_compras"] and val["ok_pagos"] and val["ok_pago_total"]
         print(f"  validacion: {'OK' if ok else 'FAIL'}", file=sys.stderr)
     # Only fail on compras mismatch — pagos/pago_total can drift by a few hundred

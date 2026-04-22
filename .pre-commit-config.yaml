@@ -1,7 +1,19 @@
 # .pre-commit-config.yaml
 #
-# Mirrors the enforcement rules declared in CLAUDE.md.
-# After installing, run `pre-commit autoupdate` to pick up newer hook revisions.
+# Git hooks for quanto. Mirrors the enforcement rules declared in CLAUDE.md.
+# Run `pre-commit autoupdate` periodically to pick up newer hook revisions.
+#
+# Install (once per clone):
+#   uv tool install pre-commit     # or: pipx install pre-commit
+#   pre-commit install --install-hooks
+#   pre-commit install --hook-type commit-msg
+#
+# Run manually on all files:
+#   pre-commit run --all-files
+#
+# System binaries required on PATH:
+#   - betterleaks   (https://github.com/betterleaks/betterleaks) — dnf/brew/docker
+#   - uv            (https://docs.astral.sh/uv/) — already required by the repo
 
 default_install_hook_types: [pre-commit, commit-msg, pre-push]
 
@@ -22,7 +34,7 @@ repos:
       - id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable
       - id: check-added-large-files
-        args: [--maxkb=10240]
+        args: [--maxkb=10240]       # 10 MB ceiling — use Git LFS above this
       - id: check-yaml
       - id: check-json
       - id: check-toml
@@ -35,24 +47,35 @@ repos:
           - --pattern=^release/
 
   # ---------------------------------------------------------------------------
-  # Secret detection — gitleaks
+  # Python lint + format — Ruff
+  #
+  # ruff-check runs before ruff-format so that --fix can apply autofixes
+  # before formatting (recommended order per Astral's docs).
   # ---------------------------------------------------------------------------
-  - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.30.0
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.11
     hooks:
-      - id: gitleaks
+      - id: ruff-check
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
 
   # ---------------------------------------------------------------------------
   # Conventional Commits — commitlint (runs on commit-msg stage)
+  #
+  # NOTE on commitlint v20: the CLI is pure ESM. quanto has no package.json,
+  # so Node treats commitlint.config.js as CommonJS by default and the
+  # existing `module.exports = {...}` form works unchanged.
   # ---------------------------------------------------------------------------
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.24.0
+    rev: v9.23.0
     hooks:
       - id: commitlint
         stages: [commit-msg]
         additional_dependencies:
-          - '@commitlint/cli@19.5.0'
-          - '@commitlint/config-conventional@19.5.0'
+          - '@commitlint/cli@20.5.0'
+          - '@commitlint/config-conventional@20.5.0'
 
   # ---------------------------------------------------------------------------
   # Shell script linting
@@ -62,3 +85,21 @@ repos:
     hooks:
       - id: shellcheck
         args: [--severity=warning]
+
+  # ---------------------------------------------------------------------------
+  # Secret detection — Betterleaks (Gitleaks alternative, Aikido Security)
+  #
+  # Uses the system-installed binary via a local hook. Rationale: Betterleaks
+  # is young (v1.x); the upstream .pre-commit-hooks.yaml contract may shift
+  # in early releases, so we pin through the binary version instead.
+  # Repo-specific rules (financial-data safety net, optional Colombian PII)
+  # live in .betterleaks.toml.
+  # ---------------------------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: betterleaks
+        name: betterleaks (detect hardcoded secrets)
+        description: Scan staged changes for hardcoded secrets using Betterleaks
+        entry: betterleaks git --pre-commit --redact --staged --verbose
+        language: system
+        pass_filenames: false

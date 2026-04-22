@@ -1,6 +1,10 @@
 // commitlint.config.js
-// Conventional Commits enforcement, aligned with the CLAUDE.md rules.
+//
+// Conventional Commits enforcement for quanto.
 // Consumed by the commitlint pre-commit hook on the commit-msg stage.
+//
+// Replaces the inline regex check from the previous lefthook.yml setup —
+// same rule spirit (feat|fix|docs|...), more thorough field-by-field checks.
 
 module.exports = {
   extends: ['@commitlint/config-conventional'],
@@ -9,16 +13,16 @@ module.exports = {
       2,
       'always',
       [
-        'feat',
-        'fix',
-        'chore',
-        'docs',
-        'refactor',
-        'test',
-        'perf',
-        'ci',
-        'build',
-        'revert',
+        'feat',      // new feature
+        'fix',       // bug fix
+        'chore',     // tooling, deps, housekeeping
+        'docs',      // documentation only
+        'refactor',  // code change that neither fixes a bug nor adds a feature
+        'test',      // adding or correcting tests
+        'perf',      // performance improvement
+        'ci',        // CI/CD pipeline change
+        'build',     // build system / external dependencies
+        'revert',    // revert a previous commit
       ],
     ],
     'type-case': [2, 'always', 'lower-case'],

@@ -5,9 +5,54 @@ code in this repository.
 
 > **Template baseline.** Extend this file with project-specific sections
 > (project overview, commands, architecture, key files, etc.) — do not
-> replace it. The Tool Execution, Git Hooks, and Git Workflow sections
-> below encode engineering standards that should remain consistent across
-> repositories.
+> replace it. The Core Principles, Tool Execution, Git Hooks, and Git
+> Workflow sections below encode engineering standards that should
+> remain consistent across repositories.
+
+## Core Principles
+
+- **Accuracy over creativity**: prioritize factual correctness and internal consistency. Use conservative wording when uncertain.
+- **Source grounding**: base all factual claims on provided tools, files, or MCP sources. If an answer is not present, explicitly state you do not know.
+- **No speculation**: in high-stakes contexts (security, financial data, auth), do not guess. Describe the uncertainty or request more context.
+- **Direct & technical tone**: be concise and fact-based. No filler phrases, no self-congratulatory updates.
+- **Financial data safety**: this repository processes personal financial statements. Treat every file under `extractos/` and `analisis/` as sensitive. Never echo the contents of these files into commit messages, logs, or conversation outputs beyond what is strictly necessary to complete the task.
+
+## EPCCV Workflow (Explore → Plan → Code → Commit → Verify)
+
+Follow this sequence for any non-trivial task. Skip to the appropriate phase if the scope is small.
+
+### Explore
+- Read relevant files, understand current state and dependencies before proposing changes.
+- Keep investigation focused — read only what's needed for the change at hand.
+- Identify affected modules, test coverage, and potential side effects.
+
+### Plan
+- Present a plan before modifying files. Include: what changes, which files, what could break.
+- For multi-file changes, list the exact files and functions to touch.
+- Get approval before proceeding to Code phase. Do not start coding during Plan.
+
+### Code
+- Implement only what was planned. Do not refactor adjacent code or "clean up" unrelated sections.
+- Preserve existing comments, docstrings, tags, headers, and structural markers unless explicitly told to remove them.
+- Maintain structural invariants (JSON key order, export order, dataclass field order).
+
+### Commit
+- Write clear, conventional commit messages describing what changed and why.
+- Keep commits atomic — one logical change per commit.
+- Do not bundle unrelated changes.
+
+### Verify
+- Run tests after every change: `uv run pytest` (once tests exist). If a project command differs, check `pyproject.toml` first.
+- Verify the change matches the plan. If implementation diverged, flag it.
+- If something breaks in a hard-to-reverse way, stop and ask before continuing.
+
+## Idempotency
+
+Any script or function that modifies state (writes files, updates analysis outputs, fetches remote data) must follow **Check → Action → Verify**:
+- Check current state before modifying.
+- Act only if current state diverges from desired state.
+- Verify post-action state matches desired state.
+- Do not error because a resource already exists — update or skip cleanly.
 
 ## Tool Execution
 
@@ -17,16 +62,24 @@ Python is managed by [uv](https://docs.astral.sh/uv/). Run scripts with
 `.python-version`; dependencies and metadata live in `pyproject.toml`.
 Run `uv sync` after a fresh clone to create `.venv/`.
 
-## Git Hooks (pre-commit)
+Linting and formatting are handled by [Ruff](https://docs.astral.sh/ruff/),
+invoked via `uv run ruff check` and `uv run ruff format`. Configuration
+lives in `pyproject.toml` under `[tool.ruff]`.
 
-Git hooks are managed by the [pre-commit](https://pre-commit.com/)
-framework. Configuration lives in `.pre-commit-config.yaml`; per-hook
-configs live in `commitlint.config.js` and `.gitleaks.toml`.
+`pre-commit` and `betterleaks` are globally-installed tools (not managed by
+`uv`) and are invoked directly. On this host they live inside the `quanto`
+toolbox — see the Bootstrap section below.
 
-Install pre-commit once per machine (`pipx install pre-commit`), then
-register the hooks per clone. `default_install_hook_types` in
-`.pre-commit-config.yaml` already lists `pre-commit`, `commit-msg`, and
-`pre-push`, so a single `install` registers all three:
+## Git Hooks (pre-commit framework)
+
+Git hooks are managed by the [pre-commit framework](https://pre-commit.com/).
+Configuration lives in `.pre-commit-config.yaml`; per-hook configs live in
+`commitlint.config.js` and `.betterleaks.toml`.
+
+Install pre-commit once per machine (`uv tool install pre-commit` or
+`pipx install pre-commit`). `default_install_hook_types` in
+`.pre-commit-config.yaml` lists `pre-commit`, `commit-msg`, and `pre-push`,
+so a single install registers all three:
 
 ```bash
 pre-commit install --install-hooks
@@ -39,19 +92,30 @@ pre-commit autoupdate
 | ----- | ---- | ------ | -------------- |
 | pre-commit | baseline hygiene | pre-commit/pre-commit-hooks v6.0.0 | trailing whitespace, missing EOF newline, CRLF, merge conflicts, case conflicts, bad shebangs, files >10 MB, invalid YAML/JSON/TOML, private keys in tree |
 | pre-commit | no-commit-to-branch | pre-commit/pre-commit-hooks v6.0.0 | Direct commits to `main`, `master`, `develop`, or any `release/*` branch |
-| pre-commit | gitleaks | gitleaks/gitleaks v8.30.0 | ~200 provider-specific secret formats (AWS, GitHub PATs, Stripe, GCP, private-key blobs, high-entropy strings). Allowlist in `.gitleaks.toml` |
+| pre-commit | ruff-check --fix | astral-sh/ruff-pre-commit v0.15.11 | Python lint violations (pycodestyle, pyflakes, isort, bugbear, pyupgrade, simplify, ruff-specific) |
+| pre-commit | ruff-format | astral-sh/ruff-pre-commit v0.15.11 | Python formatting drift |
 | pre-commit | shellcheck | shellcheck-py v0.11.0.1 | Shell scripting issues (severity ≥ warning) |
-| commit-msg | commitlint | alessandrojcm/commitlint-pre-commit-hook v9.24.0 + `@commitlint/cli@19.5.0` | Non-conventional format, bad type, uppercase type, empty subject, trailing period, subject >72 chars |
+| pre-commit | betterleaks | local (system binary v1.1.1+) | Hardcoded secrets (~200 provider formats + repo-specific financial-data rule). Allowlist in `.betterleaks.toml` |
+| commit-msg | commitlint | alessandrojcm/commitlint-pre-commit-hook v9.23.0 + `@commitlint/cli@20.5.0` | Non-conventional format, bad type, uppercase type, empty subject, trailing period, subject >72 chars |
 
 Pins are maintained by `pre-commit autoupdate` — run periodically to pull
 newer hook revisions. Merge and revert commits are auto-ignored by
 commitlint so they pass the commit-msg hook.
 
+`.betterleaks.toml` extends Betterleaks' default ruleset with a
+repo-specific `financial-data-committed` rule (belt-and-braces block on
+`extractos/*.pdf` and `analisis/**/*.json`, which are also gitignored).
+Optional Colombian PII patterns (cédula, NIT, bank account) are included
+but commented out — enable them after validating against sanitized test
+data. Betterleaks reads both `.betterleaks.toml` and legacy `.gitleaks.toml`.
+
 **Manual hook execution:**
 
 ```bash
-pre-commit run --all-files            # all hooks across the whole tree
-pre-commit run gitleaks --all-files   # just one hook
+pre-commit run --all-files                    # all hooks, full repo
+pre-commit run ruff-check --all-files         # single hook
+pre-commit run --hook-stage commit-msg        # commit-msg hooks only
+pre-commit autoupdate                         # bump pinned hook revisions
 ```
 
 ## Git Workflow & Best Practices
@@ -65,19 +129,34 @@ When committing changes or managing git for this repository, adhere to the follo
    ruleset (see "Server-side branch protection" below).
 2. **Conventional Commits:** Use standard prefixes: `feat:`, `fix:`, `docs:`,
    `chore:`, `refactor:`, `test:`, `ci:`, `style:`, `perf:`, `build:`, `revert:`.
-   Include scopes where applicable (e.g., `feat(auth):`, `fix(api):`). Enforced
-   by the commitlint commit-msg hook.
-3. **Secret Safety:** NEVER commit plaintext credentials. Enforced by the
-   gitleaks pre-commit hook. Keep secrets in `.env*` (gitignored) or an
-   encrypted store; use templated placeholder files for anything that must be
-   checked in.
+   Include scopes where applicable (e.g., `feat(extractos):`, `fix(analisis):`).
+   Subject: imperative mood, ≤72 chars, no trailing period. Enforced by commitlint.
+3. **Secret Safety:** NEVER commit plaintext credentials, API keys, or raw
+   financial data. Enforced by the Betterleaks hook. Keep secrets in `.env*`
+   (gitignored); use templated placeholder files for anything that must be
+   checked in. `extractos/*.pdf` and `analisis/**/*.json` are gitignored —
+   keep them that way, and the `financial-data-committed` Betterleaks rule
+   blocks them at scanner level as belt-and-braces.
 4. **Atomic Commits:** Keep commits logically separated. Don't bundle unrelated
    changes (e.g., feature work, doc sweeps, and formatting refactors should be
    three commits).
-5. **Pre-Commit Checks:** Automated via `pre-commit`. Manual run:
-   `pre-commit run --all-files`.
+5. **Staging discipline:** Never `git add .` or `git add -A` without reviewing.
+   Use `git add -p` for hunk-level staging, or explicit paths. Always run
+   `git status` and `git diff --staged` before committing.
 6. **Clean History:** Prefer `git pull --rebase` when resolving divergent
-   branches to keep a linear history.
+   branches to keep a linear history. Do not amend or rebase commits that have
+   already been pushed to a shared branch.
+7. **Every commit must map to a Verify-phase pass.** Do not commit on red tests.
+   For this repo, run `uv run pytest` (once tests exist) before committing.
+8. **Bypassing hooks:** Use `git commit --no-verify` or `SKIP=<hook-id> git commit`
+   only when you understand why. The rules that matter are enforced at this layer;
+   bypassing is an escape hatch, not a normal workflow.
+
+For situational git procedures (rebase vs merge, hotfix flow, conflict
+resolution, bisect, recovery from mistakes), the `git-workflow` skill
+has the full reference. The skill is installed globally at
+`~/.claude/skills/git-workflow/SKILL.md` and activates automatically in
+Claude Code sessions based on the topics it covers.
 
 ### Server-side branch protection
 
@@ -122,15 +201,16 @@ internas entre productos, y genera un dashboard HTML editorial.
   directo en el host no está disponible.
 - **Contenedor de dev:** toolbox `quanto` contiene el tooling mutable
   (pre-commit, pipx, gh, poppler-utils, nodejs, pnpm, markdownlint-cli2,
-  dnf). Entrar con `toolbox enter quanto`; el `$HOME` se comparte con el
-  host.
+  betterleaks, dnf). Entrar con `toolbox enter quanto`; el `$HOME` se
+  comparte con el host.
 - **Hooks de git:** `pre-commit` sólo resuelve dentro del toolbox.
   Correr `git commit` y `git push` desde `toolbox enter quanto`; desde
   el host los hooks fallan con `pre-commit: command not found` y no se
-  aplican (gitleaks, commitlint, no-commit-to-branch, shellcheck y los
-  baseline checks quedan sin enforzar). Las herramientas subyacentes
-  (gitleaks, commitlint, shellcheck) se instalan automáticamente por
-  `pre-commit` en entornos aislados — no requieren instalación global.
+  aplican (betterleaks, commitlint, no-commit-to-branch, shellcheck, ruff
+  y los baseline checks quedan sin enforzar). Las herramientas que pre-commit
+  orquesta como repos (commitlint, shellcheck, ruff, baseline hooks) se
+  instalan automáticamente en entornos aislados; betterleaks es un binario
+  de sistema y debe estar en PATH dentro del toolbox.
 - **Python:** 3.14 gestionado por uv (pinned en `.python-version`).
 - **Shell:** Bash.
 
@@ -143,7 +223,7 @@ toolbox create --container quanto
 toolbox enter quanto
 
 # Herramientas base del sistema
-sudo dnf install -y poppler-utils nodejs pipx
+sudo dnf install -y poppler-utils nodejs pipx betterleaks
 
 # pnpm standalone installer
 curl -fsSL https://get.pnpm.io/install.sh | sh -
@@ -166,8 +246,10 @@ pre-commit autoupdate
 pdftotext -v
 markdownlint-cli2 --version
 pre-commit --version
+betterleaks version
 gh --version
 uv --version
+uv run ruff --version
 ```
 
 Si algún comando falla con `command not found` después del setup,
@@ -212,7 +294,11 @@ quanto/
   base (dependencia transitiva del escritorio KDE/Okular/Dolphin); en el
   toolbox `quanto` (imagen `fedora-toolbox` sin escritorio) hay que
   instalarlo explícitamente: `toolbox run -c quanto sudo dnf install poppler-utils`.
-- No hay dependencias pip — todo el código usa stdlib.
+- `betterleaks` — secret scanner de Aikido Security, disponible en dnf
+  Fedora 43 (`sudo dnf install betterleaks`). Requerido por el hook
+  `betterleaks` en `.pre-commit-config.yaml`.
+- No hay dependencias pip de runtime — todo el código usa stdlib. Ruff
+  está declarado como dev dependency en `pyproject.toml`.
 
 ### Comandos comunes
 

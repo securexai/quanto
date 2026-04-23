@@ -15,7 +15,6 @@ code in this repository.
 - **Source grounding**: base all factual claims on provided tools, files, or MCP sources. If an answer is not present, explicitly state you do not know.
 - **No speculation**: in high-stakes contexts (security, financial data, auth), do not guess. Describe the uncertainty or request more context.
 - **Direct & technical tone**: be concise and fact-based. No filler phrases, no self-congratulatory updates.
-- **Financial data safety**: this repository processes personal financial statements. Treat every file under `extractos/` and `analisis/` as sensitive. Never echo the contents of these files into commit messages, logs, or conversation outputs beyond what is strictly necessary to complete the task.
 
 ## EPCCV Workflow (Explore → Plan → Code → Commit → Verify)
 
@@ -117,6 +116,18 @@ pre-commit run ruff-check --all-files         # single hook
 pre-commit run --hook-stage commit-msg        # commit-msg hooks only
 pre-commit autoupdate                         # bump pinned hook revisions
 ```
+### Sensitive paths (this repo)
+
+Per the global sensitive-data rule, the following paths in this repo
+contain personal financial data and must not have their contents echoed:
+
+- `extractos/` — PDF bank statements
+- `analisis/` — parsed JSON output derived from those statements
+
+Both are gitignored and blocked by `.betterleaks.toml`'s
+`financial-data-committed` rule; this note exists so Claude recognizes
+them as sensitive when reasoning about the repo rather than relying
+purely on the scanner to catch staging attempts.
 
 ## Git Workflow & Best Practices
 
@@ -134,9 +145,8 @@ When committing changes or managing git for this repository, adhere to the follo
 3. **Secret Safety:** NEVER commit plaintext credentials, API keys, or raw
    financial data. Enforced by the Betterleaks hook. Keep secrets in `.env*`
    (gitignored); use templated placeholder files for anything that must be
-   checked in. `extractos/*.pdf` and `analisis/**/*.json` are gitignored —
-   keep them that way, and the `financial-data-committed` Betterleaks rule
-   blocks them at scanner level as belt-and-braces.
+   checked in. See "Sensitive paths (this repo)" above for the financial-data
+   rule.
 4. **Atomic Commits:** Keep commits logically separated. Don't bundle unrelated
    changes (e.g., feature work, doc sweeps, and formatting refactors should be
    three commits).
@@ -224,6 +234,9 @@ toolbox enter quanto
 
 # Herramientas base del sistema
 sudo dnf install -y poppler-utils nodejs pipx betterleaks
+# En sistemas sin dnf (Debian/Ubuntu/etc.), instalar betterleaks desde
+# https://github.com/betterleaks/betterleaks/releases — el resto de
+# herramientas tiene equivalentes en apt (`poppler-utils`, `nodejs`, `pipx`).
 
 # pnpm standalone installer
 curl -fsSL https://get.pnpm.io/install.sh | sh -
@@ -341,8 +354,12 @@ explícita: `> use the quanto subagent`.
 
 ### Invariantes críticas
 
-- **Nunca commitear PDFs ni JSONs de análisis** — contienen datos
-  financieros personales. Protegido por `.gitignore`.
+- **Nunca commitear PDFs ni JSONs de análisis.** Ver "Sensitive paths
+  (this repo)" arriba. Operacionalmente: antes de cualquier `git add`,
+  verifica que `extractos/` y `analisis/` están en `.gitignore` — si el
+  toolbox arranca con un `.gitignore` corrupto o sobrescrito, los hooks
+  de pre-commit no corren hasta `git commit` y los archivos ya estarían
+  staged.
 - **El parser de ahorros debe correrse ANTES del matcher** — el matcher
   modifica el JSON de ahorros in-place marcando fondeos a Nequi.
   Re-correr el matcher sin re-parsear ahorros duplica las marcas.
